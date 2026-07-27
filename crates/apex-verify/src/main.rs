@@ -17,13 +17,7 @@ fn decode_url() -> String {
 }
 
 
-fn anti_debug() {
-    unsafe {
-        if libc::ptrace(libc::PTRACE_TRACEME, 0, 0, 0) == -1 {
-            std::process::exit(0);
-        }
-    }
-}
+
 
 fn done_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
@@ -32,7 +26,6 @@ fn done_path() -> PathBuf {
 
 fn main() {
 
-    anti_debug();
 
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--version") {
