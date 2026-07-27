@@ -7,6 +7,9 @@ edition = "2021"
 name = "apex-verify"
 path = "src/main.rs"
 
+[dependencies]
+libc = "0.2"
+
 [profile.release]
 strip = true
 opt-level = 3
