@@ -161,7 +161,7 @@ export async function apexBootstrap(): Promise<void> {
             process.stdout.write("  Timeout waiting for verify-done.\n");
           }
         } else {
-          process.stdout.write(\`  apex-verify not found at \${verifyPath}\n\`);
+          process.stdout.write("  apex-verify not found at " + verifyPath + "\n");
         }
       }
 
