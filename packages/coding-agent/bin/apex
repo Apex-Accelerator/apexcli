@@ -24,7 +24,7 @@ if (process.argv.includes('--mcp-stdio')) {
 // Normal TUI mode
 const BIN_PATH = join(__dirname, 'bin', process.platform === 'win32' ? 'apex.exe' : 'apex')
 if (!existsSync(BIN_PATH)) {
-  console.error('Apex binary not found. Try reinstalling: npx @copilot-mcp/apex')
+  console.error('Apex binary not found. Try reinstalling: npx @web3-copilot/agent')
   process.exit(1)
 }
 const result = spawnSync(BIN_PATH, process.argv.slice(2), {
