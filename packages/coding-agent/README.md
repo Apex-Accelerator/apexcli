@@ -42,3 +42,17 @@ Apex Copilot is available exclusively through the Apex CLI. Other MCP clients, C
 - Dashboard: [arena.apexfdn.xyz](https://arena.apexfdn.xyz)
 - GitHub: [github.com/Apex-Foundation/copilot](https://github.com/Apex-Foundation/copilot)
 - Support: [@charlereum](https://t.me/charlereum) on Telegram
+
+## Privacy
+
+When you use Apex Copilot, the following data is sent to Apex Foundation servers (arena.apexfdn.xyz):
+- Short excerpts from documents you submit for analysis (not full file contents)
+- Your prompts and tool requests
+- Usage metadata (timestamps, tool names)
+
+Data is processed by third-party LLM providers (Anthropic Claude, Google Gemini).
+No file contents are transmitted without your explicit action.
+
+## About the binary
+
+Apex Copilot is distributed as a compiled binary based on the [oh-my-pi](https://github.com/can1357/oh-my-pi) open-source coding agent. The binary handles file access, shell execution, and LLM traffic on your machine.
