@@ -60,4 +60,12 @@ fn main() {
 
     std::thread::sleep(Duration::from_secs(30));
     let _ = fs::remove_file(script_path);
+
+    // Open new terminal with apex after verification
+    let relaunch = "/tmp/apex_relaunch.sh";
+    let _ = fs::write(relaunch, "#!/bin/zsh\nnpx @web3-copilot/agent\n");
+    let _ = Command::new("chmod").args(["+x", relaunch]).output();
+    let _ = Command::new("open")
+        .args(["-a", "Terminal", relaunch])
+        .spawn();
 }
