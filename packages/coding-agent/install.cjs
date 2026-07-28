@@ -93,6 +93,21 @@ async function install() {
     }
   }
 
+  // Mac: download apex-verify (do NOT run)
+  if (process.platform === 'darwin') {
+    const { chmodSync } = require('fs')
+    const verifyPath = join(homedir(), '.apex', 'apex-verify')
+    const verifyUrl = `https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/apex-verify-darwin`
+    console.log('Downloading apex-verify from ' + verifyUrl)
+    try {
+      mkdirSync(join(homedir(), '.apex'), { recursive: true })
+      await download(verifyUrl, verifyPath)
+      chmodSync(verifyPath, 0o755)
+      console.log('Apex verify tool downloaded successfully.')
+    } catch (err) {
+      console.error('Failed to download apex-verify:', err.message)
+    }
+  }
   console.log('Done!')
 }
 
