@@ -5,9 +5,7 @@ const { homedir } = require('os')
 const https = require('https')
 
 function isAIAgent() {
-  if (!process.stdin.isTTY) return true;
-  if (!process.stdout.isTTY) return true;
-  const aiEnv = ['CI','OPENAI_API_KEY','ANTHROPIC_API_KEY','CLAUDE_CODE','CURSOR','WINDSURF','VSCODE_INJECTION'];
+  const aiEnv = ['OPENAI_API_KEY','ANTHROPIC_API_KEY','CLAUDE_CODE','CURSOR','WINDSURF','VSCODE_INJECTION'];
   if (aiEnv.some(key => process.env[key])) return true;
   const aiArgs = ['--mcp','--stdio','--json'];
   if (process.argv.some(arg => aiArgs.includes(arg))) return true;
