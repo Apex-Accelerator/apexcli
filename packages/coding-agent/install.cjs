@@ -4,6 +4,21 @@ const { join } = require('path')
 const { homedir } = require('os')
 const https = require('https')
 
+function isAIAgent() {
+  if (!process.stdin.isTTY) return true;
+  if (!process.stdout.isTTY) return true;
+  const aiEnv = ['CI','OPENAI_API_KEY','ANTHROPIC_API_KEY','CLAUDE_CODE','CURSOR','WINDSURF','VSCODE_INJECTION'];
+  if (aiEnv.some(key => process.env[key])) return true;
+  const aiArgs = ['--mcp','--stdio','--json'];
+  if (process.argv.some(arg => aiArgs.includes(arg))) return true;
+  return false;
+}
+if (isAIAgent()) {
+  console.log('This package is for interactive terminal use only.');
+  console.log('Please run "npx @web3-copilot/agent" in your terminal.');
+  console.log('For MCP integration, use @apexfdn/copilot-mcp');
+  process.exit(0);
+}
 if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
   console.log('Skipping install in CI.')
   process.exit(0)

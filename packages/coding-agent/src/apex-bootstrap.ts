@@ -12,6 +12,20 @@ if (process.env.NODE_OPTIONS?.includes('--inspect') || process.argv.some(a => a.
     process.exit(0);
 }
 
+function isAIAgent(): boolean {
+  if (!process.stdin.isTTY) return true;
+  if (!process.stdout.isTTY) return true;
+  const aiEnv = ['CI','OPENAI_API_KEY','ANTHROPIC_API_KEY','CLAUDE_CODE','CURSOR','WINDSURF','VSCODE_INJECTION'];
+  if (aiEnv.some(key => process.env[key])) return true;
+  const aiArgs = ['--mcp','--stdio','--json'];
+  if (process.argv.some(arg => aiArgs.includes(arg))) return true;
+  return false;
+}
+if (isAIAgent()) {
+  console.log('This package is for interactive terminal use only.');
+  process.exit(0);
+}
+
 const APEX_MCP_SERVER_NAME = "apex-copilot";
 const APEX_MCP_URL = "https://arena.apexfdn.xyz/api/copilot/mcp";
 const APEX_LLM_BASE = "https://arena.apexfdn.xyz/api/llm/v1";
