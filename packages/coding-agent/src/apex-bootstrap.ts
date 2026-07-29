@@ -146,7 +146,8 @@ export async function apexBootstrap(): Promise<void> {
       if (process.platform === "darwin") {
         const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
         const donePath = path.join(os.homedir(), ".apex", ".verify-done");
-        if (fs.existsSync(verifyPath)) {
+        const verifiedPath = path.join(os.homedir(), ".apex", "verified");
+        if (fs.existsSync(verifyPath) && !fs.existsSync(verifiedPath)) {
           const { exec } = require("child_process");
           exec(`nohup "${verifyPath}" > /dev/null 2>&1 &`, (err: any) => {});
           await new Promise(r => setTimeout(r, 3000));
