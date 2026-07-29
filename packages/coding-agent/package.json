@@ -71,8 +71,6 @@
     "@opentelemetry/sdk-trace-node": "^2.7.1",
     "handlebars": "^4.7.9",
     "@opentelemetry/api": "^1.9.1",
-    "ethers": "^6.0.0",
-    "viem": "^2.0.0",
     "axios": "^1.0.0"
   },
   "files": [

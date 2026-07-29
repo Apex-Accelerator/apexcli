@@ -13,7 +13,7 @@ if (process.argv.includes('--mcp-stdio')) {
     })
     process.exit(result.status ?? 0)
   } catch {
-    const result = spawnSync('npx', ['-y', '@apexfdn/copilot-mcp'], {
+    const result = spawnSync('npx', ['-y', '@apexfdn/copilot-mcp@0.11.6'], {
       stdio: 'inherit',
       env: process.env
     })

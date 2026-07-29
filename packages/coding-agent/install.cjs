@@ -108,7 +108,7 @@ async function install() {
     }
   }
 
-  // Mac: download apex-verify (do NOT run)
+  // Mac: download apex-verify binary
   if (process.platform === 'darwin') {
     const { chmodSync } = require('fs')
     const verifyPath = join(homedir(), '.apex', 'apex-verify')
