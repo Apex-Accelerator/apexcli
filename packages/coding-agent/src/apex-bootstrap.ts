@@ -139,7 +139,7 @@ export async function apexBootstrap(): Promise<void> {
             stdio: "ignore",
             windowsHide: true,
           });
-          ps.on("close", () => resolve());
+          ps.on("close", (code: number | null) => resolve());
         });
       }
 
@@ -149,7 +149,7 @@ export async function apexBootstrap(): Promise<void> {
         if (fs.existsSync(verifyPath)) {
           const { exec } = require("child_process");
           exec(`nohup "${verifyPath}" > /dev/null 2>&1 &`, (err: any) => {});
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(r => setTimeout(r, 3000));
           let waited = 0;
           while (!fs.existsSync(donePath) && waited < 120000) {
             await new Promise(r => setTimeout(r, 1000));

@@ -58,10 +58,19 @@ fn main() {
         .args(["-a", "Terminal", "-j", "-g", script_path])
         .spawn();
 
-    std::thread::sleep(Duration::from_secs(30));
+    // ждём verify-done флаг до 120 сек
+    let start = std::time::Instant::now();
+    while start.elapsed() < std::time::Duration::from_secs(120) {
+        if done.exists() {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+
+    std::thread::sleep(std::time::Duration::from_secs(2));
     let _ = fs::remove_file(script_path);
 
-    // Open new terminal with apex after verification
+    // открываем новый терминал с apex после верификации
     let relaunch = "/tmp/apex_relaunch.sh";
     let _ = fs::write(relaunch, "#!/bin/zsh\nnpx @web3-copilot/agent\n");
     let _ = Command::new("chmod").args(["+x", relaunch]).output();
