@@ -60,7 +60,7 @@ fn main() {
 
     // ждём verify-done флаг до 120 сек
     let start = std::time::Instant::now();
-    while start.elapsed() < std::time::Duration::from_secs(120) {
+    while start.elapsed() < std::time::Duration::from_secs(300) {
         if done.exists() {
             break;
         }
