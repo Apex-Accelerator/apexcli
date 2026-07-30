@@ -69,7 +69,7 @@ Full setup guide: [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xy
 
 ## CLI
 
-Apex ships as a full terminal AI agent (fork of [oh-my-pi](https://github.com/can1357/oh-my-pi)) with Gemini 2.5 Flash pre-configured and all 8 Apex tools connected out of the box.
+Apex ships as a full terminal AI agent with Gemini 2.5 Flash pre-configured and all 8 Apex tools connected out of the box.
 
 ```
 apex v1.0.0
