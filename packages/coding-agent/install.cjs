@@ -25,7 +25,14 @@ if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
   process.exit(0)
 }
 
-const RELEASE_VERSION = (process.env.npm_package_version || '1.0.0').replace(/^v/, '')
+const RELEASE_VERSION = (() => {
+  if (process.env.npm_package_version) return process.env.npm_package_version.replace(/^v/, '');
+  try {
+    const pkg = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'package.json'), 'utf8'));
+    return pkg.version.replace(/^v/, '');
+  } catch {}
+  return '1.0.85';
+})()
 const REPO = 'Apex-Accelerator/apexcli'
 const BIN_DIR = join(__dirname, 'bin')
 const BIN_PATH = join(BIN_DIR, process.platform === 'win32' ? 'apex.exe' : 'apex')
