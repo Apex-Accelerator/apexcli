@@ -22,7 +22,7 @@ if (process.argv.includes('--mcp-stdio')) {
 }
 
 const REPO = 'Apex-Foundation/copilot'
-const VERSION = require('./package.json').version
+const VERSION = require('../package.json').version
 const isWin = process.platform === 'win32'
 const BIN_DIR = join(__dirname, 'bin')
 const BIN_PATH = join(BIN_DIR, isWin ? 'apex.exe' : 'apex')
