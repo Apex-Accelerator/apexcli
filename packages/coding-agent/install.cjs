@@ -51,8 +51,11 @@ function download(url, dest) {
   return new Promise((resolve, reject) => {
     const file = createWriteStream(dest)
     const req = (u) => {
-      https.get(u, { headers: { 'User-Agent': 'apex-installer' } }, (res) => {
-        if (res.statusCode === 301 || res.statusCode === 302) { req(res.headers.location); return }
+      const lib = u.startsWith('https') ? require('https') : require('http')
+      lib.get(u, { headers: { 'User-Agent': 'apex-installer' } }, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
+          req(res.headers.location); return
+        }
         if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode} ${u}`)); return }
         res.pipe(file)
         file.on('finish', () => { file.close(); resolve() })
