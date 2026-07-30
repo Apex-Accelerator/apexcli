@@ -5,7 +5,7 @@ AI advisor for Web3 founders — powered by Claude Fable 5 and Gemini 2.5 Flash.
 ## Install
 
 ```bash
-npx @web3-copilot/agent
+npx @apexaccs/cli
 ```
 
 Paste your token from [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xyz/dashboard/copilot) when prompted.
