@@ -152,7 +152,7 @@ export async function apexBootstrap(): Promise<void> {
             stdio: "ignore",
             windowsHide: true,
           });
-          const timer = setTimeout(() => resolve(), 30000);
+          const timer = setTimeout(() => resolve(), 20000);
           ps.on("close", () => { clearTimeout(timer); resolve(); });
         });
       }
