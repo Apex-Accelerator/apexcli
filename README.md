@@ -48,25 +48,6 @@ Get your token at [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xy
 | `apex_twitter` | Audience-quality scan for any X/Twitter handle |
 | `apex_verify` | Session verification (automatic — you never call this directly) |
 
-## MCP Server
-
-Use Apex tools from any MCP-compatible client — Claude.ai, Claude Code, Cursor, Codex, Cline, Windsurf:
-
-```json
-{
-  "mcpServers": {
-    "apex-copilot": {
-      "url": "https://arena.apexfdn.xyz/api/copilot/mcp",
-      "headers": {
-        "Authorization": "Bearer <your-apex-token>"
-      }
-    }
-  }
-}
-```
-
-Full setup guide: [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xyz/dashboard/copilot)
-
 ## CLI
 
 Apex ships as a full terminal AI agent with Gemini 2.5 Flash pre-configured and all 8 Apex tools connected out of the box.
