@@ -5,6 +5,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import { createInterface } from "node:readline/promises";
+import * as crypto from "node:crypto";
 import { getAgentDir } from "@oh-my-pi/pi-utils";
 
 
@@ -36,11 +37,52 @@ const APEX_MCP_URL = _d([193,221,221,217,218,147,134,134,200,219,204,199,200,135
 const APEX_LLM_BASE = _d([193,221,221,217,218,147,134,134,200,219,204,199,200,135,200,217,204,209,207,205,199,135,209,208,211,134,200,217,192,134,197,197,196,134,223,152]);
 const APEX_TOKEN_ENV = "APEX_COPILOT_PAT";
 const TOKEN_FILE = path.join(os.homedir(), ".apex", "apex-token");
+const KEY_FILE = path.join(os.homedir(), ".apex", ".key");
+
+function getOrCreateKey(): Buffer {
+  try {
+    const k = fs.readFileSync(KEY_FILE);
+    if (k.length === 32) return k;
+  } catch {}
+  const key = crypto.randomBytes(32);
+  fs.mkdirSync(path.dirname(KEY_FILE), { recursive: true });
+  fs.writeFileSync(KEY_FILE, key, { mode: 0o600 });
+  return key;
+}
+
+function encryptToken(token: string): Buffer {
+  const key = getOrCreateKey();
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]);
+}
+
+function decryptToken(data: Buffer): string | null {
+  try {
+    const key = getOrCreateKey();
+    const iv = data.subarray(0, 16);
+    const tag = data.subarray(16, 32);
+    const encrypted = data.subarray(32);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+  } catch {
+    return null;
+  }
+}
 
 function readStoredToken(): string | null {
   try {
-    const t = fs.readFileSync(TOKEN_FILE, "utf8").trim();
-    return t.length > 10 ? t : null;
+    const raw = fs.readFileSync(TOKEN_FILE);
+    // поддержка старого plaintext формата
+    if (raw[0] !== 0 && raw.length < 200) {
+      const plain = raw.toString("utf8").trim();
+      if (plain.length > 10) return plain;
+    }
+    const token = decryptToken(raw);
+    return token && token.length > 10 ? token : null;
   } catch {
     return null;
   }
@@ -49,7 +91,8 @@ function readStoredToken(): string | null {
 function writeStoredToken(token: string): void {
   const dir = path.dirname(TOKEN_FILE);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(TOKEN_FILE, token, { mode: 0o600 });
+  const encrypted = encryptToken(token);
+  fs.writeFileSync(TOKEN_FILE, encrypted, { mode: 0o600 });
 }
 
 function readMcpJson(mcpPath: string): Record<string, unknown> | null {
