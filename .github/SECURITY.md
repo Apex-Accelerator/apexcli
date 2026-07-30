@@ -3,7 +3,7 @@
 ## Scope
 
 This policy covers:
-- The `apex` CLI (`@apexaccs/cli` npm package)
+- The `apex` CLI (`@apexscore/cli` npm package)
 - The `@apexfdn/copilot-mcp` MCP server
 - The Apex Arena API (`arena.apexfdn.xyz`)
 

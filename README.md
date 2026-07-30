@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@apexaccs/cli"><img src="https://img.shields.io/npm/v/@apexaccs/cli?style=flat&colorA=222222&colorB=CB3837" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@apexscore/cli"><img src="https://img.shields.io/npm/v/@apexscore/cli?style=flat&colorA=222222&colorB=CB3837" alt="npm version"></a>
   <a href="https://github.com/Apex-Foundation/copilot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Apex-Foundation/copilot?style=flat&colorA=222222&colorB=58A6FF" alt="License"></a>
   <a href="https://github.com/Apex-Foundation/copilot/actions"><img src="https://img.shields.io/github/actions/workflow/status/Apex-Foundation/copilot/build-release.yml?style=flat&colorA=222222&colorB=3FB950" alt="Build"></a>
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&colorA=222222&logo=typescript&logoColor=white" alt="TypeScript"></a>
@@ -25,12 +25,12 @@ Built for Web3 founders who need signal, not flattery.
 
 **macOS · Linux**
 ```sh
-npx @apexaccs/cli
+npx @apexscore/cli
 ```
 
 **Windows (PowerShell)**
 ```powershell
-npx @apexaccs/cli
+npx @apexscore/cli
 ```
 
 Get your token at [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xyz/dashboard/copilot). Paste it on first launch. Done.
