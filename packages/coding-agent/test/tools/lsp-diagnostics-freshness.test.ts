@@ -1,0 +1,316 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
+import * as path from "node:path";
+import { createLspWritethrough, type FileDiagnosticsResult } from "@oh-my-pi/pi-coding-agent/lsp";
+import * as lspClient from "@oh-my-pi/pi-coding-agent/lsp/client";
+import * as lspConfig from "@oh-my-pi/pi-coding-agent/lsp/config";
+import type { Diagnostic, LspClient, ServerConfig } from "@oh-my-pi/pi-coding-agent/lsp/types";
+import { fileToUri } from "@oh-my-pi/pi-coding-agent/lsp/utils";
+import { type ptree, TempDir } from "@oh-my-pi/pi-utils";
+
+const TEST_SERVER: ServerConfig = {
+	command: "test-lsp",
+	fileTypes: ["ts"],
+	rootMarkers: [],
+};
+
+function createDiagnostic(message: string): Diagnostic {
+	return {
+		message,
+		severity: 1,
+		range: {
+			start: { line: 0, character: 0 },
+			end: { line: 0, character: 1 },
+		},
+	};
+}
+
+function createClient(cwd: string, config: ServerConfig): LspClient {
+	return {
+		name: "test-lsp",
+		cwd,
+		config,
+		proc: {} as ptree.ChildProcess<"pipe">,
+		requestId: 0,
+		diagnostics: new Map(),
+		diagnosticsVersion: 0,
+		openFiles: new Map(),
+		pendingRequests: new Map(),
+		messageBuffer: new Uint8Array(),
+		isReading: false,
+		status: "ready",
+		lastActivity: Date.now(),
+		writeQueue: Promise.resolve(),
+		activeProgressTokens: new Set(),
+		projectLoaded: Promise.resolve(),
+		resolveProjectLoaded: () => {},
+	};
+}
+
+function publishDiagnostics(client: LspClient, uri: string, diagnostics: Diagnostic[], version: number | null): void {
+	client.diagnostics.set(uri, { diagnostics, version });
+	client.diagnosticsVersion += 1;
+}
+
+/**
+ * Deterministic virtual clock that drives the production diagnostics poll/settle
+ * loop and the inline-vs-deferred race without any real wall-clock waiting.
+ *
+ * The writethrough's only time sources are `Bun.sleep` (100ms poll interval,
+ * 500ms inline budget) and `Date.now()` (poll-loop deadline + settle window).
+ * {@link installVirtualTime} routes both through this clock: each `Bun.sleep(ms)`
+ * advances virtual time by `ms` (firing any publish callbacks that come due) and
+ * resolves on the microtask queue, so the loop spins to completion instantly and
+ * `Date.now()` math stays consistent with the same advancing time. Server
+ * publishes are scheduled on the clock via {@link VirtualClock.in}, so the loop's
+ * own advancing drives exactly when fresh/stale diagnostics become visible.
+ */
+class VirtualClock {
+	now: number;
+	private seq = 0;
+	private events: Array<{ at: number; seq: number; fn: () => void }> = [];
+	constructor(base: number) {
+		this.now = base;
+	}
+	/** Schedule `fn` to fire `delay` ms from the current virtual time. */
+	in(delay: number, fn: () => void): void {
+		this.events.push({ at: this.now + delay, seq: this.seq++, fn });
+	}
+	/** Advance virtual time by `ms`, firing every due callback in scheduled order. */
+	advance(ms: number): void {
+		const target = this.now + ms;
+		this.events.sort((a, b) => a.at - b.at || a.seq - b.seq);
+		while (this.events.length > 0 && this.events[0]!.at <= target) {
+			const ev = this.events.shift()!;
+			this.now = Math.max(this.now, ev.at);
+			ev.fn();
+		}
+		this.now = target;
+	}
+}
+
+/**
+ * Replace real time with `clock` for the duration of a test. Restored by
+ * `vi.restoreAllMocks()` in afterEach, keeping the file full-suite-safe.
+ */
+function installVirtualTime(clock: VirtualClock): void {
+	vi.spyOn(Date, "now").mockImplementation(() => clock.now);
+	vi.spyOn(Bun, "sleep").mockImplementation(((ms: number) => {
+		clock.advance(ms);
+		return Promise.resolve();
+	}) as typeof Bun.sleep);
+}
+
+describe("LSP diagnostics freshness", () => {
+	let tempDir: TempDir;
+
+	beforeEach(() => {
+		tempDir = TempDir.createSync("@omp-lsp-freshness-");
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		tempDir.removeSync();
+	});
+
+	it("suppresses stale write diagnostics until the matching document version arrives", async () => {
+		const filePath = path.join(tempDir.path(), "example.ts");
+		const uri = fileToUri(filePath);
+		const client = createClient(tempDir.path(), TEST_SERVER);
+		client.openFiles.set(uri, { version: 1, languageId: "typescript" });
+		const clock = new VirtualClock(Date.now());
+		installVirtualTime(clock);
+
+		vi.spyOn(lspConfig, "loadConfig").mockReturnValue({ servers: {}, idleTimeoutMs: undefined });
+		vi.spyOn(lspConfig, "getServersForFile").mockReturnValue([["test-lsp", TEST_SERVER]]);
+		vi.spyOn(lspClient, "getOrCreateClient").mockResolvedValue(client);
+		vi.spyOn(lspClient, "syncContent").mockImplementation(async (mockClient, syncedFilePath) => {
+			const syncedUri = fileToUri(syncedFilePath);
+			mockClient.diagnostics.delete(syncedUri);
+			const openFile = mockClient.openFiles.get(syncedUri);
+			if (openFile) {
+				openFile.version += 1;
+			} else {
+				mockClient.openFiles.set(syncedUri, { version: 1, languageId: "typescript" });
+			}
+		});
+		vi.spyOn(lspClient, "notifySaved").mockImplementation(async (mockClient, savedFilePath) => {
+			const savedUri = fileToUri(savedFilePath);
+			clock.in(10, () => {
+				publishDiagnostics(mockClient, savedUri, [createDiagnostic("stale error")], null);
+			});
+			clock.in(150, () => {
+				publishDiagnostics(mockClient, savedUri, [], mockClient.openFiles.get(savedUri)?.version ?? null);
+			});
+		});
+
+		const writethrough = createLspWritethrough(tempDir.path(), {
+			enableFormat: false,
+			enableDiagnostics: true,
+		});
+		const result = await writethrough(filePath, "export const value = 2;\n");
+
+		expect(result).toBeDefined();
+		expect(result?.messages).toEqual([]);
+		expect(result?.summary).toBe("OK");
+		expect(result?.errored).toBe(false);
+		expect(await Bun.file(filePath).text()).toBe("export const value = 2;\n");
+	});
+
+	it("settles on the latest unversioned publish when the server never echoes a version", async () => {
+		const filePath = path.join(tempDir.path(), "example.ts");
+		const uri = fileToUri(filePath);
+		const client = createClient(tempDir.path(), TEST_SERVER);
+		client.openFiles.set(uri, { version: 1, languageId: "typescript" });
+		const clock = new VirtualClock(Date.now());
+		installVirtualTime(clock);
+
+		vi.spyOn(lspConfig, "loadConfig").mockReturnValue({ servers: {}, idleTimeoutMs: undefined });
+		vi.spyOn(lspConfig, "getServersForFile").mockReturnValue([["test-lsp", TEST_SERVER]]);
+		vi.spyOn(lspClient, "getOrCreateClient").mockResolvedValue(client);
+		vi.spyOn(lspClient, "syncContent").mockImplementation(async (mockClient, syncedFilePath) => {
+			const syncedUri = fileToUri(syncedFilePath);
+			mockClient.diagnostics.delete(syncedUri);
+			const openFile = mockClient.openFiles.get(syncedUri);
+			if (openFile) {
+				openFile.version += 1;
+			} else {
+				mockClient.openFiles.set(syncedUri, { version: 1, languageId: "typescript" });
+			}
+		});
+		vi.spyOn(lspClient, "notifySaved").mockImplementation(async (mockClient, savedFilePath) => {
+			const savedUri = fileToUri(savedFilePath);
+			clock.in(10, () => {
+				publishDiagnostics(mockClient, savedUri, [createDiagnostic("stale error")], null);
+			});
+			clock.in(150, () => {
+				publishDiagnostics(mockClient, savedUri, [createDiagnostic("real error")], null);
+			});
+		});
+
+		const writethrough = createLspWritethrough(tempDir.path(), {
+			enableFormat: false,
+			enableDiagnostics: true,
+		});
+		const result = await writethrough(filePath, "export const value: number = 'x';\n");
+
+		expect(result).toBeDefined();
+		expect(result?.errored).toBe(true);
+		expect(result?.messages.some(m => m.includes("real error"))).toBe(true);
+		expect(result?.messages.some(m => m.includes("stale error"))).toBe(false);
+	});
+
+	it("returns promptly and delivers diagnostics via the deferred channel when the server is slow", async () => {
+		const filePath = path.join(tempDir.path(), "example.ts");
+		const uri = fileToUri(filePath);
+		const client = createClient(tempDir.path(), TEST_SERVER);
+		client.openFiles.set(uri, { version: 1, languageId: "typescript" });
+		const clock = new VirtualClock(Date.now());
+		installVirtualTime(clock);
+
+		vi.spyOn(lspConfig, "loadConfig").mockReturnValue({ servers: {}, idleTimeoutMs: undefined });
+		vi.spyOn(lspConfig, "getServersForFile").mockReturnValue([["test-lsp", TEST_SERVER]]);
+		vi.spyOn(lspClient, "getOrCreateClient").mockResolvedValue(client);
+		vi.spyOn(lspClient, "syncContent").mockImplementation(async (mockClient, syncedFilePath) => {
+			const syncedUri = fileToUri(syncedFilePath);
+			mockClient.diagnostics.delete(syncedUri);
+			const openFile = mockClient.openFiles.get(syncedUri);
+			if (openFile) {
+				openFile.version += 1;
+			} else {
+				mockClient.openFiles.set(syncedUri, { version: 1, languageId: "typescript" });
+			}
+		});
+		// Publish far past the 500ms inline budget (INLINE_DIAGNOSTICS_WAIT_TIMEOUT_MS)
+		// so the writethrough deterministically defers; virtual time keeps it instant.
+		vi.spyOn(lspClient, "notifySaved").mockImplementation(async (mockClient, savedFilePath) => {
+			const savedUri = fileToUri(savedFilePath);
+			clock.in(2000, () => {
+				publishDiagnostics(mockClient, savedUri, [createDiagnostic("deferred error")], null);
+			});
+		});
+
+		const late = Promise.withResolvers<FileDiagnosticsResult>();
+		const handle = {
+			onDeferredDiagnostics: (d: FileDiagnosticsResult) => late.resolve(d),
+			signal: new AbortController().signal,
+			finalize: () => {},
+		};
+
+		const writethrough = createLspWritethrough(tempDir.path(), { enableFormat: false, enableDiagnostics: true });
+		const inline = await writethrough(
+			filePath,
+			"export const value: number = 'x';\n",
+			undefined,
+			undefined,
+			undefined,
+			() => handle,
+		);
+
+		// Inline returns undefined: the writethrough deferred rather than blocking on
+		// the slow publish. A result fresh within the inline budget would be returned
+		// inline, so `undefined` is proof it returned promptly via the deferred path.
+		expect(inline).toBeUndefined();
+
+		// ...and the diagnostics arrive afterwards via the deferred channel.
+		const lateResult = await late.promise;
+		expect(lateResult.errored).toBe(true);
+		expect(lateResult.messages.some(m => m.includes("deferred error"))).toBe(true);
+
+		// The edit still landed on disk regardless of diagnostics timing.
+		expect(await Bun.file(filePath).text()).toBe("export const value: number = 'x';\n");
+	});
+
+	it("suppresses TypeScript project diagnostics for orphan files but keeps syntax errors", async () => {
+		const server: ServerConfig = {
+			...TEST_SERVER,
+			rootMarkers: ["package.json", "tsconfig.json", "jsconfig.json"],
+		};
+		const orphanDir = TempDir.createSync("@omp-lsp-orphan-");
+		try {
+			const filePath = path.join(orphanDir.path(), "scratch.ts");
+			const uri = fileToUri(filePath);
+			const client = createClient(tempDir.path(), server);
+			client.openFiles.set(uri, { version: 1, languageId: "typescript" });
+
+			vi.spyOn(lspConfig, "loadConfig").mockReturnValue({
+				servers: { "typescript-language-server": server },
+				idleTimeoutMs: undefined,
+			});
+			vi.spyOn(lspConfig, "getServersForFile").mockReturnValue([["typescript-language-server", server]]);
+			vi.spyOn(lspClient, "getOrCreateClient").mockResolvedValue(client);
+			vi.spyOn(lspClient, "syncContent").mockImplementation(async (mockClient, syncedFilePath) => {
+				const syncedUri = fileToUri(syncedFilePath);
+				mockClient.openFiles.set(syncedUri, { version: 1, languageId: "typescript" });
+			});
+			vi.spyOn(lspClient, "notifySaved").mockImplementation(async mockClient => {
+				const moduleDiagnostic = createDiagnostic(
+					"Cannot find module 'bun:sqlite' or its corresponding type declarations.",
+				);
+				moduleDiagnostic.code = 2307;
+				const bunDiagnostic = createDiagnostic(
+					"Cannot find name 'Bun'. Do you need to install type definitions for Bun?",
+				);
+				bunDiagnostic.code = 2867;
+				const syntaxDiagnostic = createDiagnostic("';' expected.");
+				syntaxDiagnostic.code = 1005;
+				mockClient.diagnostics.set(uri, {
+					version: 1,
+					diagnostics: [moduleDiagnostic, bunDiagnostic, syntaxDiagnostic],
+				});
+				mockClient.diagnosticsVersion += 1;
+			});
+
+			const writethrough = createLspWritethrough(tempDir.path(), { enableFormat: false, enableDiagnostics: true });
+			const result = await writethrough(filePath, 'import { Database } from "bun:sqlite";\nawait Bun.sleep(1)\n');
+
+			expect(result).toBeDefined();
+			expect(result?.errored).toBe(true);
+			expect(result?.messages.some(message => message.includes("bun:sqlite"))).toBe(false);
+			expect(result?.messages.some(message => message.includes("Cannot find name 'Bun'"))).toBe(false);
+			expect(result?.messages.some(message => message.includes("';' expected."))).toBe(true);
+			expect(await Bun.file(filePath).text()).toBe('import { Database } from "bun:sqlite";\nawait Bun.sleep(1)\n');
+		} finally {
+			orphanDir.removeSync();
+		}
+	});
+});

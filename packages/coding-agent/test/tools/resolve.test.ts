@@ -1,0 +1,192 @@
+import { describe, expect, it } from "bun:test";
+import { Settings } from "@oh-my-pi/pi-coding-agent/config/settings";
+import { getThemeByName } from "@oh-my-pi/pi-coding-agent/modes/theme/theme";
+import type { ToolSession } from "@oh-my-pi/pi-coding-agent/tools";
+import { ResolveTool, resolveToolRenderer } from "@oh-my-pi/pi-coding-agent/tools/resolve";
+import { sanitizeText } from "@oh-my-pi/pi-utils";
+
+function createSession(handler?: (input: unknown) => Promise<unknown>, clearPendingInvokers?: () => void): ToolSession {
+	return {
+		cwd: "/tmp",
+		hasUI: false,
+		getSessionFile: () => null,
+		getSessionSpawns: () => "*",
+		settings: Settings.isolated(),
+		peekQueueInvoker: handler ? () => handler : () => undefined,
+		clearPendingInvokers,
+	};
+}
+
+function getText(result: { content: Array<{ type: string; text?: string }> }): string {
+	return result.content.find(part => part.type === "text")?.text ?? "";
+}
+
+function getRequiredFields(schema: { json?: { required?: Array<{ key: string }> } }): string[] {
+	const required: string[] = [];
+	if (schema.json?.required && Array.isArray(schema.json.required)) {
+		required.push(...schema.json.required.map(item => item.key));
+	}
+	return required.sort();
+}
+
+describe("ResolveTool", () => {
+	it("requires action and reason in schema", () => {
+		const tool = new ResolveTool(createSession());
+		const required = getRequiredFields(tool.parameters as { json?: { required?: Array<{ key: string }> } });
+		expect(required).toEqual(["action", "reason"]);
+	});
+
+	it("errors and clears stale pending markers when apply has no invoker", async () => {
+		let clearRuns = 0;
+		const tool = new ResolveTool(
+			createSession(undefined, () => {
+				clearRuns++;
+			}),
+		);
+		await expect(tool.execute("call-none", { action: "apply", reason: "looks correct" })).rejects.toThrow(
+			"No pending action to resolve. Nothing to apply or discard.",
+		);
+		expect(clearRuns).toBe(1);
+	});
+
+	it("treats discard with no pending action as a successful cancellation and clears stale markers", async () => {
+		let clearRuns = 0;
+		const tool = new ResolveTool(
+			createSession(undefined, () => {
+				clearRuns++;
+			}),
+		);
+		const result = await tool.execute("call-discard-none", {
+			action: "discard",
+			reason: "Abandoning the staged edit.",
+		});
+		expect(result.isError ?? false).toBe(false);
+		expect(getText(result)).toContain("Nothing to discard");
+		expect(result.details).toMatchObject({ action: "discard", reason: "Abandoning the staged edit." });
+		expect(clearRuns).toBe(1);
+	});
+
+	it("discards pending action and clears store", async () => {
+		let discardedReason: string | undefined;
+		const handler = async (input: unknown) => {
+			const p = input as { action: string; reason: string };
+			if (p.action === "discard") {
+				discardedReason = p.reason;
+			}
+			return {
+				content: [{ type: "text", text: "Rejected pending preview." }],
+				details: {
+					action: p.action,
+					reason: p.reason,
+					sourceToolName: "ast_edit",
+					label: "AST Edit: 2 replacements in 1 file",
+				},
+			};
+		};
+		const session = createSession(handler);
+		const tool = new ResolveTool(session);
+		const result = await tool.execute("call-discard", {
+			action: "discard",
+			reason: "Preview changed wrong callsites",
+		});
+
+		expect(getText(result)).toContain("Rejected pending preview.");
+		expect(discardedReason).toBe("Preview changed wrong callsites");
+		expect(result.details).toEqual({
+			action: "discard",
+			reason: "Preview changed wrong callsites",
+			sourceToolName: "ast_edit",
+			label: "AST Edit: 2 replacements in 1 file",
+		});
+	});
+
+	it("applies pending action and clears store", async () => {
+		let appliedReason: string | undefined;
+		const handler = async (input: unknown) => {
+			const p = input as { action: string; reason: string };
+			if (p.action === "apply") {
+				appliedReason = p.reason;
+			}
+			return {
+				content: [{ type: "text", text: "Applied 1 replacement in 1 file." }],
+				details: {
+					action: p.action,
+					reason: p.reason,
+					sourceToolName: "ast_edit",
+					label: "AST Edit: 1 replacement in 1 file",
+				},
+			};
+		};
+		const session = createSession(handler);
+		const tool = new ResolveTool(session);
+		const result = await tool.execute("call-apply", {
+			action: "apply",
+			reason: "Preview is correct",
+		});
+
+		expect(appliedReason).toBe("Preview is correct");
+		expect(getText(result)).toContain("Applied 1 replacement in 1 file.");
+		expect(result.details).toEqual({
+			action: "apply",
+			reason: "Preview is correct",
+			sourceToolName: "ast_edit",
+			label: "AST Edit: 1 replacement in 1 file",
+		});
+	});
+});
+
+it("renders a highlighted apply summary", async () => {
+	const theme = await getThemeByName("dark");
+	expect(theme).toBeDefined();
+	const uiTheme = theme!;
+
+	const component = resolveToolRenderer.renderResult(
+		{
+			content: [{ type: "text", text: "Applied 2 replacements in 1 file." }],
+			details: {
+				action: "apply",
+				reason: "All replacements are correct",
+				sourceToolName: "ast_edit",
+				label: "AST Edit: 2 replacements in 1 file",
+			},
+		},
+		{ expanded: false, isPartial: false },
+		uiTheme,
+	);
+
+	const rendered = sanitizeText(component.render(90).join("\n"));
+	expect(rendered).toContain("Accept: 2 replacements in 1 file");
+	expect(rendered).toContain("AST Edit");
+	expect(rendered).toContain("All replacements are correct");
+	expect(rendered).not.toContain("Applied 2 replacements in 1 file.");
+	expect(rendered).not.toContain("Decision");
+	expect(rendered).not.toContain(uiTheme.boxRound.topLeft);
+});
+
+it("keeps the inverse block color across the full line (no mid-line fg reset)", async () => {
+	const theme = await getThemeByName("dark");
+	expect(theme).toBeDefined();
+	const uiTheme = theme!;
+
+	const component = resolveToolRenderer.renderResult(
+		{
+			content: [{ type: "text", text: "Applied 2 replacements in 1 file." }],
+			details: {
+				action: "apply",
+				reason: "All replacements are correct",
+				sourceToolName: "ast_edit",
+				label: "AST Edit: 2 replacements in 1 file",
+			},
+		},
+		{ expanded: false, isPartial: false },
+		uiTheme,
+	);
+
+	// Each line is inverse(fg(color, ...)): under inverse the fg paints the block
+	// background, so an embedded fg reset (e.g. a styledSymbol icon's \x1b[39m)
+	// turns everything after it white. Exactly one reset — the outer close — may
+	// appear per line.
+	for (const line of component.render(90)) {
+		expect(line.split("\x1b[39m")).toHaveLength(2);
+	}
+});
