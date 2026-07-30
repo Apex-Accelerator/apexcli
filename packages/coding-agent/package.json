@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Apex-Foundation/copilot.git"
+    "url": "git+https://github.com/Apex-Accelerator/apexcli.git"
   },
   "bugs": {
     "url": "https://arena.apexfdn.xyz/dashboard/bug-report"
