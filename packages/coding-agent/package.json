@@ -41,8 +41,7 @@
     "gen:mupdf:reset": "bun scripts/embed-mupdf-wasm.ts --reset",
     "gen:native": "bun --cwd=../natives run gen:native",
     "gen:native:reset": "bun --cwd=../natives run gen:native:reset",
-    "bench:guard": "bun scripts/bench-guard.ts",
-    "postinstall": "node install.cjs"
+    "bench:guard": "bun scripts/bench-guard.ts"
   },
   "dependencies": {
     "chalk": "^5.6.2",
