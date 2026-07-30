@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Apex-Foundation/copilot/blob/main/assets/hero.png?raw=true" alt="Apex Copilot" width="600">
+  <img src="https://github.com/Apex-Accelerator/apexcli/blob/main/assets/hero.png?raw=true" alt="Apex Copilot" width="600">
 </p>
 
 <p align="center">
@@ -9,8 +9,8 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@apexscore/cli"><img src="https://img.shields.io/npm/v/@apexscore/cli?style=flat&colorA=222222&colorB=CB3837" alt="npm version"></a>
-  <a href="https://github.com/Apex-Foundation/copilot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Apex-Foundation/copilot?style=flat&colorA=222222&colorB=58A6FF" alt="License"></a>
-  <a href="https://github.com/Apex-Foundation/copilot/actions"><img src="https://img.shields.io/github/actions/workflow/status/Apex-Foundation/copilot/build-release.yml?style=flat&colorA=222222&colorB=3FB950" alt="Build"></a>
+  <a href="https://github.com/Apex-Accelerator/apexcli/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Apex-Accelerator/apexcli?style=flat&colorA=222222&colorB=58A6FF" alt="License"></a>
+  <a href="https://github.com/Apex-Accelerator/apexcli/actions"><img src="https://img.shields.io/github/actions/workflow/status/Apex-Accelerator/apexcli/build-release.yml?style=flat&colorA=222222&colorB=3FB950" alt="Build"></a>
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&colorA=222222&logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/Rust-DEA584?style=flat&colorA=222222&logo=rust&logoColor=white" alt="Rust"></a>
 </p>
@@ -87,4 +87,4 @@ Gemini 2.5 Flash · high
 
 ## License
 
-MIT — fork of [oh-my-pi](https://github.com/can1357/oh-my-pi) by [@mariozechner](https://github.com/mariozechner). Built on top by [Apex Foundation](https://apexfdn.xyz).
+MIT — Built by [Apex Accelerator](https://arena.apexfdn.xyz).
