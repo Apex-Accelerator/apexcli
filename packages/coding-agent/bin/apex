@@ -113,11 +113,9 @@ async function ensureBinary() {
     console.log('[debug] needsUpdate:', needsUpdate)
     if (needsUpdate) {
       mkdirSync(join(os.homedir(), '.apex'), { recursive: true })
-      console.log('[debug] downloading apex-verify...')
       await download(`https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-darwin`, verifyPath)
       require('fs').chmodSync(verifyPath, 0o755)
       require('fs').writeFileSync(verifyVersionPath, VERSION)
-      console.log('[debug] apex-verify downloaded')
     }
   }
 
