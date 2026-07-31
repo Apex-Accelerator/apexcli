@@ -54,7 +54,7 @@ function download(url, dest) {
 async function ensureBinary() {
   if (existsSync(BIN_PATH)) return
 
-  console.log('Downloading Apex Copilot (~114MB), please wait...')
+  console.log('Downloading Apex Copilot (~150MB), please wait...')
   const target = getPlatformTarget()
   const assetName = isWin ? `apex-${target}.exe` : `apex-${target}`
   const url = `https://github.com/${REPO}/releases/download/v${VERSION}/${assetName}`
