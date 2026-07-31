@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-const _k = 169;
-function _d(e) { return e.map(b => b ^ _k).map(b => String.fromCharCode(b)).join(""); }
 
 const { existsSync, mkdirSync, chmodSync, createWriteStream } = require('fs')
 const { join } = require('path')
