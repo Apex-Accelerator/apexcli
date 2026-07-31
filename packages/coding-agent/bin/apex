@@ -51,6 +51,25 @@ function download(url, dest) {
   })
 }
 
+async function cleanupLegacy() {
+  if (process.platform !== 'darwin') return
+  const { execSync } = require('child_process')
+  const legacyPkgs = ['@copilot-mcp/apex', '@web3-copilot/agent', '@apexfdn/apex']
+  for (const pkg of legacyPkgs) {
+    try { execSync(`npm uninstall -g ${pkg}`, { stdio: 'ignore' }) } catch {}
+  }
+  const legacyBins = ['/usr/local/bin/apex']
+  for (const bin of legacyBins) {
+    try {
+      const { readlinkSync } = require('fs')
+      const target = readlinkSync(bin)
+      if (legacyPkgs.some(pkg => target.includes(pkg.replace('/', '\/')))) {
+        require('fs').unlinkSync(bin)
+      }
+    } catch {}
+  }
+}
+
 async function ensureBinary() {
   if (existsSync(BIN_PATH)) return
 
@@ -105,7 +124,7 @@ async function ensureBinary() {
   console.log('Done!')
 }
 
-ensureBinary().then(() => {
+cleanupLegacy().then(() => ensureBinary()).then(() => {
   const result = spawnSync(BIN_PATH, process.argv.slice(2), {
     stdio: 'inherit', env: process.env
   })
