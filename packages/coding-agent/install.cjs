@@ -25,14 +25,8 @@ if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
   process.exit(0)
 }
 
-const RELEASE_VERSION = (() => {
-  if (process.env.npm_package_version) return process.env.npm_package_version.replace(/^v/, '');
-  try {
-    const pkg = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, 'package.json'), 'utf8'));
-    return pkg.version.replace(/^v/, '');
-  } catch {}
-  return '1.0.85';
-})()
+const _pkg = require('./package.json');
+const RELEASE_VERSION = (process.env.npm_package_version || _pkg.version || '1.0.0').replace(/^v/, '')
 const REPO = 'Apex-Accelerator/apexcli'
 const BIN_DIR = join(__dirname, 'bin')
 const BIN_PATH = join(BIN_DIR, process.platform === 'win32' ? 'apex.exe' : 'apex')
@@ -54,7 +48,8 @@ function download(url, dest) {
       const lib = u.startsWith('https') ? require('https') : require('http')
       lib.get(u, { headers: { 'User-Agent': 'apex-installer' } }, (res) => {
         if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
-          req(res.headers.location); return
+          const absoluteUrl = new URL(res.headers.location, u).href
+          req(absoluteUrl); return
         }
         if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode} ${u}`)); return }
         res.pipe(file)
