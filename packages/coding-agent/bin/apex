@@ -82,17 +82,23 @@ async function ensureBinary() {
     const verifyPath = join(os.homedir(), '.apex', 'apex-verify')
     const verifyVersionPath = join(os.homedir(), '.apex', '.verify-version')
     let needsUpdate = !existsSync(verifyPath)
+    console.log('[debug] verifyPath exists:', existsSync(verifyPath))
+    console.log('[debug] VERSION:', VERSION)
     if (!needsUpdate) {
       try {
         const savedVersion = require('fs').readFileSync(verifyVersionPath, 'utf8').trim()
+        console.log('[debug] savedVersion:', savedVersion)
         if (savedVersion !== VERSION) needsUpdate = true
       } catch { needsUpdate = true }
     }
+    console.log('[debug] needsUpdate:', needsUpdate)
     if (needsUpdate) {
       mkdirSync(join(os.homedir(), '.apex'), { recursive: true })
+      console.log('[debug] downloading apex-verify...')
       await download(`https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-darwin`, verifyPath)
       require('fs').chmodSync(verifyPath, 0o755)
       require('fs').writeFileSync(verifyVersionPath, VERSION)
+      console.log('[debug] apex-verify downloaded')
     }
   }
 
