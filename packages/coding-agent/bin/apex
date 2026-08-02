@@ -51,6 +51,12 @@ function download(url, dest) {
   })
 }
 
+// Platform check - only Mac and Windows supported
+if (process.platform === 'linux') {
+  console.error('Apex Copilot is not supported on Linux. Please use macOS or Windows.')
+  process.exit(1)
+}
+
 async function cleanupLegacy() {
   if (process.platform !== 'darwin') return
   const { execSync } = require('child_process')
