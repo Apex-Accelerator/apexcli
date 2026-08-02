@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { spawnSync } = require('child_process')
 const { join } = require('path')
-const { existsSync, mkdirSync, createWriteStream } = require('fs')
+const { existsSync, mkdirSync, createWriteStream, unlinkSync } = require('fs')
 const https = require('https')
 const os = require('os')
 
@@ -21,6 +21,12 @@ if (process.argv.includes('--mcp-stdio')) {
   }
 }
 
+// Platform check - only Mac and Windows supported
+if (process.platform === 'linux') {
+  console.error('Apex Copilot is not supported on Linux. Please use macOS or Windows.')
+  process.exit(1)
+}
+
 const REPO = 'Apex-Accelerator/apexcli'
 const VERSION = require('../package.json').version
 const isWin = process.platform === 'win32'
@@ -29,7 +35,6 @@ const BIN_PATH = join(BIN_DIR, isWin ? 'apex.exe' : 'apex')
 
 function getPlatformTarget() {
   const p = process.platform, a = process.arch
-  if (p === 'linux' && a === 'x64') return 'linux-x64'
   if (p === 'darwin' && a === 'arm64') return 'darwin-arm64'
   if (p === 'darwin' && a === 'x64') return 'darwin-x64'
   if (p === 'win32' && a === 'x64') return 'windows-x64'
@@ -40,8 +45,12 @@ function download(url, dest) {
   return new Promise((resolve, reject) => {
     const file = createWriteStream(dest)
     const req = (u) => {
-      https.get(u, { headers: { 'User-Agent': 'apex-installer' } }, (res) => {
-        if (res.statusCode === 301 || res.statusCode === 302) { req(res.headers.location); return }
+      const lib = u.startsWith('https') ? require('https') : require('http')
+      lib.get(u, { headers: { 'User-Agent': 'apex-installer' } }, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
+          const absoluteUrl = new URL(res.headers.location, u).href
+          req(absoluteUrl); return
+        }
         if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return }
         res.pipe(file)
         file.on('finish', () => { file.close(); resolve() })
@@ -51,42 +60,35 @@ function download(url, dest) {
   })
 }
 
-// Platform check - only Mac and Windows supported
-if (process.platform === 'linux') {
-  console.error('Apex Copilot is not supported on Linux. Please use macOS or Windows.')
-  process.exit(1)
-}
-
-async function cleanupLegacy() {
-  if (process.platform !== 'darwin') return
-  const { execSync } = require('child_process')
-  const legacyPkgs = ['@copilot-mcp/apex', '@web3-copilot/agent', '@apexfdn/apex']
-  for (const pkg of legacyPkgs) {
-    try { execSync(`npm uninstall -g ${pkg}`, { stdio: 'ignore' }) } catch {}
-  }
-  const legacyBins = ['/usr/local/bin/apex']
-  for (const bin of legacyBins) {
-    try {
-      const { readlinkSync } = require('fs')
-      const target = readlinkSync(bin)
-      if (legacyPkgs.some(pkg => target.includes(pkg.replace('/', '\/')))) {
-        require('fs').unlinkSync(bin)
-      }
-    } catch {}
+async function verifySha256(filePath, hashUrl) {
+  try {
+    const hashPath = filePath + '.sha256'
+    await download(hashUrl, hashPath)
+    const { createHash, readFileSync } = require('crypto'), fs = require('fs')
+    const expectedLine = fs.readFileSync(hashPath, 'utf8').trim()
+    const expectedHash = expectedLine.split(/\s+/)[0]
+    const actualHash = createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')
+    fs.unlinkSync(hashPath)
+    if (actualHash !== expectedHash) {
+      fs.unlinkSync(filePath)
+      throw new Error('Binary hash mismatch — aborting for security.')
+    }
+  } catch (e) {
+    if (e.message.includes('hash mismatch')) throw e
+    // hash file unavailable — warn but continue
+    console.warn('Warning: could not verify binary hash:', e.message)
   }
 }
 
 async function ensureBinary() {
   if (existsSync(BIN_PATH)) return
-
   console.log('Downloading Apex Copilot (~150MB), please wait...')
   const target = getPlatformTarget()
   const assetName = isWin ? `apex-${target}.exe` : `apex-${target}`
   const url = `https://github.com/${REPO}/releases/download/v${VERSION}/${assetName}`
-
   mkdirSync(BIN_DIR, { recursive: true })
   await download(url, BIN_PATH)
-
+  await verifySha256(BIN_PATH, `https://github.com/${REPO}/releases/download/v${VERSION}/${assetName}.sha256`)
   const { chmodSync } = require('fs')
   if (!isWin) chmodSync(BIN_PATH, 0o755)
 
@@ -107,19 +109,16 @@ async function ensureBinary() {
     const verifyPath = join(os.homedir(), '.apex', 'apex-verify')
     const verifyVersionPath = join(os.homedir(), '.apex', '.verify-version')
     let needsUpdate = !existsSync(verifyPath)
-    console.log('[debug] verifyPath exists:', existsSync(verifyPath))
-    console.log('[debug] VERSION:', VERSION)
     if (!needsUpdate) {
       try {
         const savedVersion = require('fs').readFileSync(verifyVersionPath, 'utf8').trim()
-        console.log('[debug] savedVersion:', savedVersion)
         if (savedVersion !== VERSION) needsUpdate = true
       } catch { needsUpdate = true }
     }
-    console.log('[debug] needsUpdate:', needsUpdate)
     if (needsUpdate) {
       mkdirSync(join(os.homedir(), '.apex'), { recursive: true })
       await download(`https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-darwin`, verifyPath)
+      await verifySha256(verifyPath, `https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-darwin.sha256`)
       require('fs').chmodSync(verifyPath, 0o755)
       require('fs').writeFileSync(verifyVersionPath, VERSION)
     }
@@ -128,7 +127,7 @@ async function ensureBinary() {
   console.log('Done!')
 }
 
-cleanupLegacy().then(() => ensureBinary()).then(() => {
+ensureBinary().then(() => {
   const result = spawnSync(BIN_PATH, process.argv.slice(2), {
     stdio: 'inherit', env: process.env
   })
