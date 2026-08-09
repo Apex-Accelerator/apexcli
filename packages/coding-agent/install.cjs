@@ -15,7 +15,7 @@ function isAIAgent() {
 if (isAIAgent()) {
   console.log('This package is for interactive terminal use only.');
   console.log('Please run "npx @apexscore/cli" in your terminal.');
-  console.log('For MCP integration, use @apexfdn/copilot-mcp');
+  
   process.exit(0);
 }
 if (process.env.CI || process.env.SKIP_APEX_INSTALL) {

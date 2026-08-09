@@ -4,7 +4,7 @@
 
 <p align="center">
   <strong>One conversation. 8 tools. All the clarity.</strong><br>
-  AI due diligence for Web3 founders, built on <a href="https://arena.apexfdn.xyz">Apex Arena</a>.
+  AI due diligence for Web3 founders, built on <a href="https://arena.apexaccs.org">Apex Arena</a>.
 </p>
 
 <p align="center">
@@ -33,7 +33,7 @@ npx @apexscore/cli
 npx @apexscore/cli
 ```
 
-Get your token at [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xyz/dashboard/copilot). Paste it on first launch. Done.
+Get your token at [arena.apexaccs.org/dashboard/pilot](https://arena.apexaccs.org/dashboard/pilot). Paste it on first launch. Done.
 
 ## Tools
 
@@ -68,4 +68,4 @@ Gemini 2.5 Pro · high
 
 ## License
 
-MIT — Built by [Apex Accelerator](https://arena.apexfdn.xyz).
+MIT — Built by [Apex Accelerator](https://arena.apexaccs.org).

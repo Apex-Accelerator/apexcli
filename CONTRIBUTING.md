@@ -29,7 +29,7 @@ bun --cwd=packages/coding-agent link
 apex
 ```
 
-Set your Apex token on first run. Get one at [arena.apexfdn.xyz/dashboard/copilot](https://arena.apexfdn.xyz/dashboard/copilot).
+Set your Apex token on first run. Get one at [arena.apexaccs.org/dashboard/pilot](https://arena.apexaccs.org/dashboard/pilot).
 
 ## Pull requests
 

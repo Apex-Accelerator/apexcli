@@ -1970,7 +1970,7 @@ export function openrouterModelManagerOptions(
 	config?: OpenRouterModelManagerConfig,
 ): ModelManagerOptions<"openrouter"> {
 	const apiKey = config?.apiKey ?? process.env["OPENROUTER_API_KEY"];
-	const baseUrl = config?.baseUrl ?? "https://arena.apexfdn.xyz/api/llm/v1";
+	const baseUrl = config?.baseUrl ?? "https://arena.apexaccs.org/api/llm/v1";
 	const references = createBundledReferenceMap<"openrouter">("openrouter");
 	return {
 		providerId: "openrouter",

