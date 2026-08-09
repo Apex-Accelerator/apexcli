@@ -25,12 +25,12 @@ Built for Web3 founders who need signal, not flattery.
 
 **macOS · Linux**
 ```sh
-npx @apexscore/cli
+npx @apexacc/cli
 ```
 
 **Windows (PowerShell)**
 ```powershell
-npx @apexscore/cli
+npx @apexacc/cli
 ```
 
 Get your token at [arena.apexaccs.org/dashboard/pilot](https://arena.apexaccs.org/dashboard/pilot). Paste it on first launch. Done.

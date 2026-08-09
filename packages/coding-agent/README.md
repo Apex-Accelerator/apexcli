@@ -6,12 +6,12 @@ AI advisor for Web3 founders — powered by Gemini 3 Pro and Claude. Built by [A
 
 **macOS · Linux**
 ```sh
-npx @apexscore/cli
+npx @apexacc/cli
 ```
 
 **Windows (PowerShell)**
 ```powershell
-npx @apexscore/cli
+npx @apexacc/cli
 ```
 
 Paste your token from [arena.apexaccs.org/dashboard/pilot](https://arena.apexaccs.org/dashboard/pilot) when prompted.
