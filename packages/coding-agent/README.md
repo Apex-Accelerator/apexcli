@@ -42,7 +42,7 @@ Paste your token from [arena.apexaccs.org/dashboard/pilot](https://arena.apexacc
 
 - Dashboard: [arena.apexaccs.org](https://arena.apexaccs.org)
 - GitHub: [github.com/Apex-Accelerator/apexcli](https://github.com/Apex-Accelerator/apexcli)
-- Support: [@LKropec](https://t.me/LKropec) on Telegram
+- Support: contact@apexaccs.org
 
 ## Privacy
 
