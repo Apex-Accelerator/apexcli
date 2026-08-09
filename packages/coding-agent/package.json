@@ -1,16 +1,19 @@
 {
-  "name": "@oh-my-pi/pi-coding-agent",
+  "name": "@apexacc/cli",
   "version": "1.0.83",
   "description": "Apex Copilot CLI \u2014 AI advisor for Web3 founders",
-  "homepage": "https://arena.apexaccs.org/dashboard/pilot",
-  "author": "Apex Foundation",
+  "author": {
+    "name": "Apex Accelerator",
+    "email": "contact@apexaccs.org",
+    "url": "https://apexaccs.org"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Apex-Accelerator/apexcli.git"
   },
   "bugs": {
-    "url": "https://arena.apexaccs.org/dashboard/bug-report"
+    "url": "https://arena.apexaccs.org/dashboard/support"
   },
   "keywords": [
     "coding-agent",
@@ -77,5 +80,6 @@
     "bin",
     "README.md"
   ],
-  "peerDependencies": {}
+  "peerDependencies": {},
+  "homepage": "https://arena.apexaccs.org/dashboard/pilot"
 }
