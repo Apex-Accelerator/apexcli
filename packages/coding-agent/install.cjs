@@ -67,10 +67,6 @@ async function install() {
   if (!existsSync(BIN_DIR)) mkdirSync(BIN_DIR, { recursive: true })
 
   console.log(`Downloading Apex Copilot for ${target}...`)
-  console.log(`DEBUG REPO: ${REPO}`)
-  console.log(`DEBUG VERSION: ${RELEASE_VERSION}`)
-  console.log(`DEBUG ASSET: ${assetName}`)
-  console.log(`DEBUG URL: ${url}`)
   try {
     await download(url, BIN_PATH)
     if (!isWin) chmodSync(BIN_PATH, 0o755)
