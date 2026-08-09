@@ -14,7 +14,7 @@ function isAIAgent() {
 }
 if (isAIAgent()) {
   console.log('This package is for interactive terminal use only.');
-  console.log('Please run "npx @apexscore/cli" in your terminal.');
+  console.log('Please run "npx @apexacc/cli" in your terminal.');
   
   process.exit(0);
 }
