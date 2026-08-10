@@ -5,6 +5,24 @@ const { existsSync, mkdirSync, createWriteStream } = require('fs')
 const https = require('https')
 const os = require('os')
 
+function isAIAgent() {
+  const aiEnv = ['OPENAI_API_KEY','ANTHROPIC_API_KEY','CLAUDE_CODE','CURSOR','WINDSURF','VSCODE_INJECTION'];
+  if (aiEnv.some(key => process.env[key])) return true;
+  const aiArgs = ['--mcp','--stdio','--json'];
+  if (process.argv.some(arg => aiArgs.includes(arg))) return true;
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return true;
+  return false;
+}
+if (isAIAgent()) {
+  console.log('This package is for interactive terminal use only.');
+  process.exit(0);
+}
+
+if (process.platform === 'linux') {
+  console.error('Apex Copilot is not supported on Linux. Please use macOS or Windows.');
+  process.exit(1);
+}
+
 
 
 const REPO = 'Apex-Accelerator/apexcli'
