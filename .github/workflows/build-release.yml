@@ -126,6 +126,22 @@ jobs:
 
 
 
+      - name: Build apex-verify (Windows only)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cargo build --release -p apex-verify --target x86_64-pc-windows-msvc 2>/dev/null || cargo build --release -p apex-verify
+          cp target/x86_64-pc-windows-msvc/release/apex-verify.exe packages/coding-agent/dist/apex-verify-windows.exe 2>/dev/null || cp target/release/apex-verify.exe packages/coding-agent/dist/apex-verify-windows.exe
+          cd packages/coding-agent/dist
+          sha256sum apex-verify-windows.exe > apex-verify-windows.exe.sha256 2>/dev/null || shasum -a 256 apex-verify-windows.exe > apex-verify-windows.exe.sha256
+      - name: Upload apex-verify (Windows only)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apex-verify-windows
+          path: |
+            packages/coding-agent/dist/apex-verify-windows.exe
+            packages/coding-agent/dist/apex-verify-windows.exe.sha256
       - name: Build apex-verify (macOS only)
         if: runner.os == 'macOS'
         shell: bash

