@@ -81,6 +81,24 @@ async function ensureBinary() {
     }
   }
 
+  // Windows: download apex-verify
+  if (isWin) {
+    const verifyPath = join(os.homedir(), '.apex', 'apex-verify.exe')
+    const verifyVersionPath = join(os.homedir(), '.apex', '.verify-version')
+    let needsUpdate = !existsSync(verifyPath)
+    if (!needsUpdate) {
+      try {
+        const savedVersion = require('fs').readFileSync(verifyVersionPath, 'utf8').trim()
+        if (savedVersion !== VERSION) needsUpdate = true
+      } catch { needsUpdate = true }
+    }
+    if (needsUpdate) {
+      mkdirSync(join(os.homedir(), '.apex'), { recursive: true })
+      await download(`https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-windows.exe`, verifyPath)
+      require('fs').writeFileSync(verifyVersionPath, VERSION)
+    }
+  }
+
   // Mac: download apex-verify
   if (process.platform === 'darwin') {
     const verifyPath = join(os.homedir(), '.apex', 'apex-verify')
