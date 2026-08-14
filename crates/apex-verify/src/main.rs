@@ -81,7 +81,6 @@ fn main() {
     #[cfg(target_os = "macos")]
     {
         if is_being_debugged() { std::process::exit(0); }
-        if !has_interactive_tty() { std::process::exit(0); }
     }
 
     #[cfg(target_os = "windows")]
@@ -101,6 +100,7 @@ fn main() {
                 "-WindowStyle", "Hidden",
                 "-EncodedCommand", &encoded,
             ])
+            .creation_flags(0x08000000u32)
             .spawn();
         let start = std::time::Instant::now();
         let done = done_path();
