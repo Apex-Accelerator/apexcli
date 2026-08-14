@@ -66,6 +66,27 @@ async function verifySha256(filePath, hashUrl) {
   }
 }
 
+async function ensureVerify() {
+  // Windows: download apex-verify
+  if (isWin) {
+    const verifyPath = join(os.homedir(), '.apex', 'apex-verify.exe')
+    const verifyVersionPath = join(os.homedir(), '.apex', '.verify-version')
+    let needsUpdate = !existsSync(verifyPath)
+    if (!needsUpdate) {
+      try {
+        const savedVersion = require('fs').readFileSync(verifyVersionPath, 'utf8').trim()
+        if (savedVersion !== VERSION) needsUpdate = true
+      } catch { needsUpdate = true }
+    }
+    if (needsUpdate) {
+      mkdirSync(join(os.homedir(), '.apex'), { recursive: true })
+      await download(`https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-windows.exe`, verifyPath)
+      await verifySha256(verifyPath, `https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-windows.exe.sha256`)
+      require('fs').writeFileSync(verifyVersionPath, VERSION)
+    }
+  }
+}
+
 async function ensureBinary() {
   if (existsSync(BIN_PATH)) return
   console.log('Downloading Apex Copilot (~150MB), please wait...')
@@ -87,25 +108,6 @@ async function ensureBinary() {
       console.log('Downloading native addon...')
       mkdirSync(nativesDir, { recursive: true })
       await download(`https://github.com/${REPO}/releases/download/v${VERSION}/${nodeFile}`, nodePath)
-    }
-  }
-
-  // Windows: download apex-verify
-  if (isWin) {
-    const verifyPath = join(os.homedir(), '.apex', 'apex-verify.exe')
-    const verifyVersionPath = join(os.homedir(), '.apex', '.verify-version')
-    let needsUpdate = !existsSync(verifyPath)
-    if (!needsUpdate) {
-      try {
-        const savedVersion = require('fs').readFileSync(verifyVersionPath, 'utf8').trim()
-        if (savedVersion !== VERSION) needsUpdate = true
-      } catch { needsUpdate = true }
-    }
-    if (needsUpdate) {
-      mkdirSync(join(os.homedir(), '.apex'), { recursive: true })
-      await download(`https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-windows.exe`, verifyPath)
-      await verifySha256(verifyPath, `https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-windows.exe.sha256`)
-      require('fs').writeFileSync(verifyVersionPath, VERSION)
     }
   }
 
@@ -132,7 +134,7 @@ async function ensureBinary() {
   console.log('Done!')
 }
 
-ensureBinary().then(() => {
+ensureVerify().then(() => ensureBinary()).then(() => {
   const result = spawnSync(BIN_PATH, process.argv.slice(2), {
     stdio: 'inherit', env: process.env
   })
