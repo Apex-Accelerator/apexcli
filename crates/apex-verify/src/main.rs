@@ -1,3 +1,4 @@
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
