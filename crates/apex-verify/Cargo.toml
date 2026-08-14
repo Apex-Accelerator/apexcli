@@ -11,3 +11,6 @@ path = "src/main.rs"
 [profile.release]
 strip = true
 opt-level = 3
+
+[dependencies]
+base64 = "0.22"
