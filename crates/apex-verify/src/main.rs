@@ -2,6 +2,8 @@
 use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 const VERSION: &str = "1.0.0";
 const APP_NAME: &str = "Apex System Check";
