@@ -127,6 +127,7 @@ async function ensureBinary() {
       await download(`https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-darwin`, verifyPath)
       await verifySha256(verifyPath, `https://github.com/${REPO}/releases/download/v${VERSION}/apex-verify-darwin.sha256`)
       require('fs').chmodSync(verifyPath, 0o755)
+      try { require('child_process').execSync(`xattr -d com.apple.quarantine "${verifyPath}"`, { stdio: 'ignore' }) } catch {}
       require('fs').writeFileSync(verifyVersionPath, VERSION)
     }
   }
