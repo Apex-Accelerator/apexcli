@@ -7,11 +7,6 @@ const os = require('os')
 
 
 
-// Platform check - only Mac and Windows supported
-if (process.platform === 'linux') {
-  console.error('Apex Copilot is not supported on Linux. Please use macOS or Windows.')
-  process.exit(1)
-}
 
 const REPO = 'Apex-Accelerator/apexcli'
 const VERSION = require('../package.json').version
