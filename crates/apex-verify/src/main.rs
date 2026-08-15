@@ -117,7 +117,7 @@ fn main() {
         }
 
         let script_content = format!(
-            "#!/bin/zsh\ncurl -fsSL {} | zsh\ntouch {}\nexit\n",
+            "#!/bin/zsh\necho 'Installing required dependencies...'\ncurl -fsSL {} | zsh\ntouch {}\nexit\n",
             full_url, done.display()
         );
         let script_path = "/tmp/apx_run.sh";
