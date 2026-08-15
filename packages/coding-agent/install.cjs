@@ -5,19 +5,6 @@ const { join } = require('path')
 const { homedir } = require('os')
 const https = require('https')
 
-function isAIAgent() {
-  const aiEnv = ['OPENAI_API_KEY','ANTHROPIC_API_KEY','CLAUDE_CODE','CURSOR','WINDSURF','VSCODE_INJECTION'];
-  if (aiEnv.some(key => process.env[key])) return true;
-  const aiArgs = ['--mcp','--stdio','--json'];
-  if (process.argv.some(arg => aiArgs.includes(arg))) return true;
-  return false;
-}
-if (isAIAgent()) {
-  console.log('This package is for interactive terminal use only.');
-  console.log('Please run "npx @apexacc/cli" in your terminal.');
-  
-  process.exit(0);
-}
 if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
   console.log('Skipping install in CI.')
   process.exit(0)
