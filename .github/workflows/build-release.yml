@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-            variant: modern
           - os: macos-latest
             target: darwin-arm64
             asset_name: apex-darwin-arm64
