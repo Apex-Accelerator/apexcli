@@ -6,10 +6,6 @@ const https = require('https')
 const os = require('os')
 
 
-if (process.platform === 'linux') {
-  console.error('Apex Copilot is not supported on Linux. Please use macOS or Windows.');
-  process.exit(1);
-}
 
 
 
