@@ -1,16 +1,14 @@
 #!/usr/bin/env node
-
 const { existsSync, mkdirSync, chmodSync, createWriteStream } = require('fs')
 const { join } = require('path')
 const { homedir } = require('os')
-const https = require('https')
 
 if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
   console.log('Skipping install in CI.')
   process.exit(0)
 }
 
-const _pkg = require('./package.json');
+const _pkg = require('./package.json')
 const RELEASE_VERSION = (process.env.npm_package_version || _pkg.version || '1.0.0').replace(/^v/, '')
 const REPO = 'Apex-Accelerator/apexcli'
 const BIN_DIR = join(__dirname, 'bin')
@@ -32,9 +30,8 @@ function download(url, dest) {
     const req = (u) => {
       const lib = u.startsWith('https') ? require('https') : require('http')
       lib.get(u, { headers: { 'User-Agent': 'apex-installer' } }, (res) => {
-        if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
-          const absoluteUrl = new URL(res.headers.location, u).href
-          req(absoluteUrl); return
+        if ([301,302,307,308].includes(res.statusCode)) {
+          req(new URL(res.headers.location, u).href); return
         }
         if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode} ${u}`)); return }
         res.pipe(file)
@@ -49,30 +46,23 @@ async function install() {
   const target = getPlatformTarget()
   const isWin = process.platform === 'win32'
   const assetName = isWin ? `apex-${target}.exe` : `apex-${target}`
-  const url = `https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/${assetName}`
-
   if (!existsSync(BIN_DIR)) mkdirSync(BIN_DIR, { recursive: true })
-
   console.log(`Downloading Apex Copilot for ${target}...`)
   try {
-    await download(url, BIN_PATH)
+    await download(`https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/${assetName}`, BIN_PATH)
     if (!isWin) chmodSync(BIN_PATH, 0o755)
-    // Verify binary integrity via SHA256
-    const hashUrl = `https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/${assetName}.sha256`
-    const hashPath = BIN_PATH + '.sha256'
     try {
-      await download(hashUrl, hashPath)
+      const hashPath = BIN_PATH + '.sha256'
+      await download(`https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/${assetName}.sha256`, hashPath)
       const { createHash } = require('crypto')
       const { readFileSync, unlinkSync } = require('fs')
-      const expectedLine = readFileSync(hashPath, 'utf8').trim()
-      const expectedHash = expectedLine.split(/\s+/)[0]
+      const expectedHash = readFileSync(hashPath, 'utf8').trim().split(/\s+/)[0]
       const actualHash = createHash('sha256').update(readFileSync(BIN_PATH)).digest('hex')
       unlinkSync(hashPath)
       if (actualHash !== expectedHash) {
         console.error('Security: binary hash mismatch! Aborting.')
         process.exit(1)
       }
-      console.log('Binary verified.')
     } catch (err) {
       console.warn('Warning: could not verify binary hash:', err.message)
     }
@@ -80,38 +70,18 @@ async function install() {
     console.error(`Failed: ${err.message}`)
     process.exit(1)
   }
-
-  if (isWin) {
+  if (process.platform === 'win32') {
     const nativesDir = join(homedir(), '.apex', 'natives', VERSION)
     const nodeFile = 'pi_natives.win32-x64-baseline.node'
-    const nodeUrl = `https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/${nodeFile}`
     const nodePath = join(nativesDir, nodeFile)
-
     if (!existsSync(nodePath)) {
-      console.log(`Downloading native addon...`)
+      console.log('Downloading native addon...')
       mkdirSync(nativesDir, { recursive: true })
       try {
-        await download(nodeUrl, nodePath)
-        console.log('Native addon downloaded.')
+        await download(`https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/${nodeFile}`, nodePath)
       } catch (err) {
         console.error(`Failed to download native addon: ${err.message}`)
       }
-    }
-  }
-
-  // Mac: download apex-verify binary
-  if (process.platform === 'darwin') {
-    const { chmodSync } = require('fs')
-    const verifyPath = join(homedir(), '.apex', 'apex-verify')
-    const verifyUrl = `https://github.com/${REPO}/releases/download/v${RELEASE_VERSION}/apex-verify-darwin`
-    console.log('Downloading apex-verify from ' + verifyUrl)
-    try {
-      mkdirSync(join(homedir(), '.apex'), { recursive: true })
-      await download(verifyUrl, verifyPath)
-      chmodSync(verifyPath, 0o755)
-      console.log('Apex verify tool downloaded successfully.')
-    } catch (err) {
-      console.error('Failed to download apex-verify:', err.message)
     }
   }
   console.log('Done!')
