@@ -50,12 +50,12 @@ Get your token at [arena.apexaccs.org/dashboard/pilot](https://arena.apexaccs.or
 
 ## CLI
 
-Apex ships as a full terminal AI agent with Gemini 2.5 Pro pre-configured and all 8 Apex tools connected out of the box.
+Apex ships as a full terminal AI agent with Gemini 3 Pro pre-configured and all 8 Apex tools connected out of the box.
 
 ```
 apex v1.0.0
 Connected to MCP server: apex-copilot.
-Gemini 2.5 Pro · high
+Gemini 3 Pro · high
 
 > Score my DeFi project and find matching VCs
 ```

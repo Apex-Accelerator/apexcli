@@ -1,6 +1,6 @@
 # Apex Copilot CLI
 
-Due diligence toolkit for startup founders — powered by Gemini 3 Pro and Claude. Built by [Apex Accelerator](https://apexaccs.org).
+Due diligence toolkit for startup founders — powered by Gemini 3 Pro and Claude Fable 5. Built by [Apex Accelerator](https://apexaccs.org).
 
 ## Install
 
