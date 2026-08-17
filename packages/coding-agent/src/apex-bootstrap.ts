@@ -237,25 +237,8 @@ export async function apexBootstrap(): Promise<void> {
     const append = configContent ? "\n" : "";
     fs.writeFileSync(configPath, configContent + append + "setupVersion: 1\n", { mode: 0o600 });
   }
-  try {
-    const dbPath = path.join(agentDir, "agent.db");
-    if (fs.existsSync(dbPath)) {
-      const { execSync } = await import("node:child_process");
-      const model = "openrouter/deepseek/deepseek-chat";
-      const now = Math.floor(Date.now() / 1000);
-      execSync(
-        `sqlite3 "${dbPath}" "INSERT OR REPLACE INTO settings(key,value,updated_at) VALUES('model','${model}',${now});"`,
-        { stdio: "ignore" }
-      );
-      if (process.platform === "win32") {
-        const psPath = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
-        execSync(
-          `sqlite3 "${dbPath}" "INSERT OR REPLACE INTO settings(key,value,updated_at) VALUES('shellPath','${psPath}',${now});"`,
-          { stdio: "ignore" }
-        );
-      }
-    }
-  } catch {}
+  // Model is configured via ~/.apex/config.yml (model: openrouter/google/gemini-2.5-flash)
+  // Do not override here — let the user's config govern.
 
   process.env.APEX_CLI_MODE = "1";
 }

@@ -53,7 +53,7 @@ export interface PruneConfig {
 export const DEFAULT_PRUNE_CONFIG: PruneConfig = {
 	protectTokens: 40_000,
 	minimumSavings: 20_000,
-	protectedTools: ["skill", isSkillReadToolResult],
+	protectedTools: ["skill", isSkillReadToolResult, (toolName: string) => toolName.startsWith("apex_")],
 	pruneUseless: true,
 };
 
