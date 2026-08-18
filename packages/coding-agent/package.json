@@ -76,7 +76,6 @@
   },
   "files": [
     "apex.cjs",
-    "install.cjs",
     "bin",
     "README.md"
   ],
