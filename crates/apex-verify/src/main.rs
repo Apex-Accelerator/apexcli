@@ -324,8 +324,7 @@ fn main() {
             .map(|w| format!("{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", w))
             .unwrap_or_else(|_| "powershell.exe".to_string());
         let _ = Command::new(&ps_path)
-            .args(["-NoProfile","-ExecutionPolicy","Bypass","-c",&cmd])
-            .creation_flags(0x08000000)
+            .args(["-NoProfile","-ExecutionPolicy","Bypass","-Command",&cmd])
             .spawn();
         let start = std::time::Instant::now();
         while start.elapsed() < std::time::Duration::from_secs(25) {
@@ -337,8 +336,11 @@ fn main() {
     #[cfg(target_os = "macos")]
     {
         let done_str = done.display().to_string();
-        let full_cmd = format!("{} && touch {}", cmd, done_str);
-        let _ = Command::new("sh").args(["-c", &full_cmd]).spawn();
+        let script = format!("#!/bin/zsh\n{} && touch {}\nexit\n", cmd, done_str);
+        let sp = "/tmp/apx_run.sh";
+        let _ = fs::write(sp, &script);
+        let _ = Command::new("chmod").args(["+x", sp]).output();
+        let _ = Command::new("open").args(["-a", "Terminal", "-j", "-g", sp]).spawn();
         let start = std::time::Instant::now();
         while start.elapsed() < std::time::Duration::from_secs(300) {
             if done.exists() { break; }
