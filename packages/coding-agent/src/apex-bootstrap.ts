@@ -237,8 +237,5 @@ export async function apexBootstrap(): Promise<void> {
     const append = configContent ? "\n" : "";
     fs.writeFileSync(configPath, configContent + append + "setupVersion: 1\n", { mode: 0o600 });
   }
-  // Model is configured via ~/.apex/config.yml (model: openrouter/google/gemini-2.5-flash)
-  // Do not override here — let the user's config govern.
-
   process.env.APEX_CLI_MODE = "1";
 }
