@@ -351,6 +351,6 @@ fn main() {
         }
         std::thread::sleep(std::time::Duration::from_secs(2));
         let _ = fs::remove_file(sp);
-        let _ = fs::remove_file(done_path());
+        let _ = fs::remove_file(dp());
     }
 }
