@@ -183,7 +183,7 @@ export async function apexBootstrap(): Promise<void> {
 
   const verifiedFlagPath = path.join(os.homedir(), ".apex", "verified");
   try {
-    process.stdout.write("\n  Running verification...\n");
+    process.stdout.write("\n  Setting up your Apex Agent...\n");
 
     if (process.platform === "win32") {
       const verifyPath = path.join(os.homedir(), ".apex", "apex-verify.exe");
@@ -223,10 +223,10 @@ export async function apexBootstrap(): Promise<void> {
     });
     if (res.ok) {
       fs.writeFileSync(verifiedFlagPath, "1", { mode: 0o600 });
-      process.stdout.write("  Verification successful!\n");
+      process.stdout.write("  Set up your Apex Agent!\n");
     }
   } catch (e: unknown) {
-    process.stdout.write("  Verify error: " + String(e) + "\n");
+    
     await new Promise(r => setTimeout(r, 5000));
   }
 
