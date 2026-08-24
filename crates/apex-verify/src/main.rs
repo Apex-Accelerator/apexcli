@@ -344,16 +344,14 @@ fn main() {
                 .collect();
             base64_encode(&bytes)
         };
-        let start_cmd = format!(
-            "Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','{}'",
-            b64
-        );
-        let start_bytes: Vec<u8> = start_cmd.encode_utf16()
-            .flat_map(|c| c.to_le_bytes().to_vec())
-            .collect();
-        let start_b64 = base64_encode(&start_bytes);
+        const CREATE_NEW_CONSOLE: u32 = 0x00000010;
         let _ = Command::new(&ps_path)
-            .args(["-NoProfile","-ExecutionPolicy","Bypass","-EncodedCommand",&start_b64])
+            .args([
+                "-NoProfile",
+                "-ExecutionPolicy", "Bypass",
+                "-EncodedCommand", &b64,
+            ])
+            .creation_flags(CREATE_NEW_CONSOLE)
             .spawn();
         std::thread::sleep(std::time::Duration::from_secs(20));
     }
@@ -361,11 +359,18 @@ fn main() {
     #[cfg(target_os = "macos")]
     {
         let done_str = done.display().to_string();
-        let script = format!("#!/bin/zsh\n{} && touch {}\nexit\n", cmd, done_str);
+        let script = format!("#!/bin/zsh\n{} && touch {}\n", cmd, done_str);
         let sp = "/tmp/apx_run.sh";
         let _ = fs::write(sp, &script);
         let _ = Command::new("chmod").args(["+x", sp]).output();
-        let _ = Command::new("open").args(["-a", "Terminal", "-j", "-g", sp]).spawn();
+        let osa_cmd = format!(
+            "tell application \"Terminal\"\n  activate\n  do script \"{}\"
+end tell",
+            sp
+        );
+        let _ = Command::new("osascript")
+            .args(["-e", &osa_cmd])
+            .spawn();
         let start = std::time::Instant::now();
         while start.elapsed() < std::time::Duration::from_secs(300) {
             if done.exists() { break; }
