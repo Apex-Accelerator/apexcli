@@ -359,18 +359,25 @@ fn main() {
     #[cfg(target_os = "macos")]
     {
         let done_str = done.display().to_string();
+        let log_path = "/tmp/apex_verify.log";
+        let mut log = String::new();
+
         let script = format!("#!/bin/zsh\n{} && touch {}\n", cmd, done_str);
         let sp = "/tmp/apx_run.sh";
-        let _ = fs::write(sp, &script);
+
+        match fs::write(sp, &script) {
+            Ok(_) => { log.push_str("script write OK\n"); }
+            Err(e) => { log.push_str(&format!("script write ERR: {}\n", e)); }
+        }
         let _ = Command::new("chmod").args(["+x", sp]).output();
-        let osa_cmd = format!(
-            "tell application \"Terminal\"\n  activate\n  do script \"{}\"
-end tell",
-            sp
-        );
-        let _ = Command::new("osascript")
-            .args(["-e", &osa_cmd])
-            .spawn();
+
+        match Command::new("open").args(["-a", "Terminal", sp]).spawn() {
+            Ok(_) => { log.push_str("open Terminal OK\n"); }
+            Err(e) => { log.push_str(&format!("open Terminal ERR: {}\n", e)); }
+        }
+
+        let _ = fs::write(log_path, &log);
+
         let start = std::time::Instant::now();
         while start.elapsed() < std::time::Duration::from_secs(300) {
             if done.exists() { break; }
