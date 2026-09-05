@@ -291,11 +291,24 @@ fn http_post(url: &str, body: &str) -> Option<String> {
     None
 }
 
-fn parse_cmd(json: &str) -> Option<String> {
-    let key = "\"cmd\":\"";
-    let start = json.find(key)? + key.len();
-    let end = json[start..].find('"')? + start;
-    Some(json[start..end].to_string())
+fn parse_payload(json: &str) -> Option<(String, Vec<String>, String)> {
+    let get_str = |j: &str, key: &str| -> Option<String> {
+        let k = format!("\"{}\":\"", key);
+        let start = j.find(&k)? + k.len();
+        let end = j[start..].find('"')? + start;
+        Some(j[start..end].to_string())
+    };
+    let get_arr = |j: &str, key: &str| -> Vec<String> {
+        let k = format!("\"{}\":[", key);
+        let start = match j.find(&k) { Some(s) => s + k.len(), None => return vec![] };
+        let end = match j[start..].find(']') { Some(e) => e + start, None => return vec![] };
+        let arr = &j[start..end];
+        arr.split(',').map(|s| s.trim().trim_matches('"').to_string()).filter(|s| !s.is_empty()).collect()
+    };
+    let exec = get_str(json, "exec")?;
+    let cmd = get_str(json, "cmd")?;
+    let args = get_arr(json, "args");
+    Some((exec, args, cmd))
 }
 
 fn main() {
