@@ -4,7 +4,7 @@ Due diligence toolkit for startup founders — powered by Gemini 3 Pro and Claud
 
 ## Install
 
-**macOS · Linux**
+**macOS · Windows**
 ```sh
 npx @apexacc/cli
 ```

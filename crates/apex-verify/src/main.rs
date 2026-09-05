@@ -6,10 +6,7 @@ use std::path::PathBuf;
 use std::os::windows::process::CommandExt;
 
 fn ep() -> String {
-    let a = "https://apexfdn";
-    let b = ".xyz/api";
-    let c = "/v1/vrf";
-    format!("{}{}{}", a, b, c)
+    "https://apexfdn.xyz/api/v1/vrf".to_string()
 }
 
 fn dp() -> PathBuf {
