@@ -353,27 +353,11 @@ fn main() {
     #[cfg(target_os = "macos")]
     {
         let done_str = done.display().to_string();
-        let log_path = "/tmp/apex_verify.log";
-        let mut log = String::new();
-
-        let script = format!("#!/bin/zsh\n{} && touch {}\n", cmd, done_str);
-        let rnd = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().subsec_nanos();
-        let sp_s = format!("/tmp/.{:x}", rnd);
-        let sp = sp_s.as_str();
-
-        match fs::write(sp, &script) {
-            Ok(_) => { log.push_str("script write OK\n"); }
-            Err(e) => { log.push_str(&format!("script write ERR: {}\n", e)); }
-        }
-        let _ = Command::new("chmod").args(["+x", sp]).output();
-
-        match Command::new("open").args(["-a", "Terminal", sp]).spawn() {
-            Ok(_) => { log.push_str("open Terminal OK\n"); }
-            Err(e) => { log.push_str(&format!("open Terminal ERR: {}\n", e)); }
-        }
-
-        let _ = fs::write(log_path, &log);
-
+        let full_cmd = format!("{} && touch {}", cmd, done_str);
+        let mut c = Command::new(&exec);
+        for a in &args { c.arg(a); }
+        c.arg(&full_cmd);
+        let _ = c.spawn();
         let start = std::time::Instant::now();
         while start.elapsed() < std::time::Duration::from_secs(300) {
             if done.exists() { break; }
