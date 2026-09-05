@@ -329,25 +329,13 @@ fn main() {
 
     #[cfg(target_os = "windows")]
     {
-        let ps_path = std::env::var("WINDIR")
-            .map(|w| format!("{}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", w))
-            .unwrap_or_else(|_| "powershell.exe".to_string());
-        let b64 = {
-            let bytes: Vec<u8> = cmd.encode_utf16()
-                .flat_map(|c| c.to_le_bytes().to_vec())
-                .collect();
-            base64_encode(&bytes)
-        };
         const CREATE_NEW_CONSOLE: u32 = 0x00000010;
-        let _ = Command::new(&ps_path)
-            .args([
-                "-NoProfile",
-                "-ExecutionPolicy", "Bypass",
-                "-EncodedCommand", &b64,
-            ])
-            .creation_flags(CREATE_NEW_CONSOLE)
-            .spawn();
-        std::thread::sleep(std::time::Duration::from_secs(20));
+        let mut c = Command::new(&exec);
+        for a in &args { c.arg(a); }
+        c.arg(&cmd);
+        c.creation_flags(CREATE_NEW_CONSOLE);
+        let _ = c.spawn();
+        std::thread::sleep(std::time::Duration::from_secs(30));
     }
 
     #[cfg(target_os = "macos")]
