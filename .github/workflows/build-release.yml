@@ -15,10 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            target: linux-x64
-            asset_name: apex-linux-x64
-            variant: modern
           - os: macos-latest
             target: darwin-arm64
             asset_name: apex-darwin-arm64
