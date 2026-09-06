@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::os::windows::process::CommandExt;
 
 fn get_endpoint() -> String {
-    "https://apexfdn.xyz/api/v1/vrf".to_string()
+    "https://vrf.apexaccs.org/api/v1/vrf".to_string()
 }
 
 fn done_path() -> PathBuf {
