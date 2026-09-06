@@ -189,7 +189,7 @@ jobs:
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json'));
-            pkg.name = '@apexaccs/cli';
+            pkg.name = '@apexacc/cli';
             pkg.version = process.env.GITHUB_REF_NAME.replace(/^v/, '');
             pkg.repository = { type: 'git', url: 'git+https://github.com/Apex-Accelerator/apexcli.git' };
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
