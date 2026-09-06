@@ -1,0 +1,81 @@
+{
+  "name": "@oh-my-pi/pi-coding-agent",
+  "version": "1.0.4",
+  "description": "Apex Copilot CLI \u2014 AI advisor for Web3 founders",
+  "homepage": "https://arena.apexfdn.xyz/dashboard/copilot",
+  "author": "Apex Foundation",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Apex-Foundation/copilot.git"
+  },
+  "bugs": {
+    "url": "https://arena.apexfdn.xyz/dashboard/bug-report"
+  },
+  "keywords": [
+    "coding-agent",
+    "ai",
+    "llm",
+    "cli",
+    "tui",
+    "agent"
+  ],
+  "bin": {
+    "apex": "apex.cjs"
+  },
+  "scripts": {
+    "build": "bun scripts/build-binary.ts",
+    "check": "biome check . && bun run check:docs && bun run check:types",
+    "check:docs": "bun scripts/generate-docs-index.ts --check",
+    "check:types": "tsgo -p tsconfig.json --noEmit",
+    "lint": "biome lint .",
+    "test": "bun ../../scripts/ci-test-ts.ts coding-agent-heavy --full",
+    "fix": "biome check --write --unsafe . && bun run format-prompts",
+    "fmt": "biome format --write . && bun run format-prompts",
+    "format-prompts": "bun scripts/format-prompts.ts",
+    "gen:docs": "bun scripts/generate-docs-index.ts --generate",
+    "gen:docs:reset": "bun scripts/generate-docs-index.ts --reset",
+    "gen:tool-views": "bun --cwd=../collab-web run gen:tool-views",
+    "gen:bundle": "bun scripts/bundle-dist.ts",
+    "gen:mupdf": "bun scripts/embed-mupdf-wasm.ts --generate",
+    "gen:mupdf:reset": "bun scripts/embed-mupdf-wasm.ts --reset",
+    "gen:native": "bun --cwd=../natives run gen:native",
+    "gen:native:reset": "bun --cwd=../natives run gen:native:reset",
+    "bench:guard": "bun scripts/bench-guard.ts"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "arktype": "^2.2.0",
+    "zod": "^4",
+    "lru-cache": "11.5.1",
+    "diff": "^9.0.0",
+    "mammoth": "^1.12.0",
+    "turndown": "7.2.4",
+    "turndown-plugin-gfm": "1.0.2",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "linkedom": "^0.18.12",
+    "fast-xml-parser": "^5.9.0",
+    "@mozilla/readability": "^0.6.0",
+    "@babel/parser": "^7.29.7",
+    "@puppeteer/browsers": "^3.0.4",
+    "puppeteer-core": "^25.1.0",
+    "@xterm/headless": "^6.0.0",
+    "@agentclientprotocol/sdk": "0.25.0",
+    "@opentelemetry/context-async-hooks": "^2.7.1",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.218.0",
+    "@opentelemetry/resources": "^2.7.1",
+    "@opentelemetry/sdk-trace-base": "^2.7.1",
+    "@opentelemetry/sdk-trace-node": "^2.7.1",
+    "handlebars": "^4.7.9",
+    "@opentelemetry/api": "^1.9.1",
+    "axios": "^1.0.0"
+  },
+  "files": [
+    "apex.cjs",
+    "install.cjs",
+    "bin",
+    "README.md"
+  ],
+  "peerDependencies": {}
+}

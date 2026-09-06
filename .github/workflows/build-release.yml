@@ -1,0 +1,203 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            asset_name: apex-linux-x64
+            variant: modern
+          - os: macos-latest
+            target: darwin-arm64
+            asset_name: apex-darwin-arm64
+            variant: ""
+          - os: windows-latest
+            target: windows-x64
+            asset_name: apex-windows-x64.exe
+            variant: baseline
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache bun dependencies
+        if: runner.os != 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            packages/*/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+
+      - name: Install dependencies
+        env:
+          BUN_CONFIG_NO_MINIMUM_RELEASE_AGE: "1"
+          SKIP_APEX_INSTALL: "1"
+        run: bun install --no-frozen-lockfile
+
+      - name: Create workspace symlinks
+        shell: bash
+        run: |
+          mkdir -p node_modules/@oh-my-pi
+          for pkg in packages/agent packages/ai packages/catalog packages/tui packages/natives packages/wire packages/utils packages/stats packages/mnemopi packages/hashline packages/snapcompact; do
+            if [ -f "$pkg/package.json" ]; then
+              name=$(cat $pkg/package.json | python3 -c "import sys,json; print(json.load(sys.stdin)['name'].split('/')[-1])")
+              ln -sf "$(pwd)/$pkg" "node_modules/@oh-my-pi/$name" 2>/dev/null || true
+            fi
+          done
+          ls node_modules/@oh-my-pi/
+
+      - name: Install optional dependencies
+        shell: bash
+        env:
+          BUN_CONFIG_NO_MINIMUM_RELEASE_AGE: "1"
+          SKIP_APEX_INSTALL: "1"
+        run: |
+          cd packages/coding-agent
+          bun add @huggingface/transformers mupdf --no-save 2>/dev/null || true
+
+      - name: Build native addon (Rust)
+        shell: bash
+        env:
+          TARGET_VARIANT: ${{ matrix.variant }}
+          RUSTFLAGS: "-A dead_code -A unused"
+        run: |
+          cd packages/natives
+          bun run build
+          ls native/
+
+      - name: Build binary
+        shell: bash
+        env:
+          TARGET_VARIANT: ${{ matrix.variant }}
+          RUSTFLAGS: "-A dead_code -A unused"
+        run: |
+          cd packages/coding-agent
+          bun --cwd=../natives run gen:native 2>&1
+          bun run build
+
+      - name: Upload native addon (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pi_natives-windows-x64
+          path: packages/natives/native/pi_natives.win32-x64-baseline.node
+
+      - name: Rename artifact
+        shell: bash
+        run: |
+          cd packages/coding-agent/dist
+          ls -la
+          for f in omp omp.exe omp-${{ matrix.target }} omp-${{ matrix.target }}.exe; do
+            if [ -f "$f" ]; then
+              cp "$f" "${{ matrix.asset_name }}"
+              echo "Copied $f to ${{ matrix.asset_name }}"
+              break
+            fi
+          done
+
+
+
+
+
+      - name: Build apex-verify (macOS only)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          cargo build --release -p apex-verify --target aarch64-apple-darwin 2>/dev/null ||           cargo build --release -p apex-verify
+          cp target/aarch64-apple-darwin/release/apex-verify packages/coding-agent/dist/apex-verify-darwin 2>/dev/null ||           cp target/release/apex-verify packages/coding-agent/dist/apex-verify-darwin
+          cd packages/coding-agent/dist
+          shasum -a 256 apex-verify-darwin > apex-verify-darwin.sha256
+
+      - name: Upload apex-verify (macOS only)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apex-verify-darwin
+          path: |
+            packages/coding-agent/dist/apex-verify-darwin
+            packages/coding-agent/dist/apex-verify-darwin.sha256
+
+      - name: Generate SHA256 hash
+        shell: bash
+        run: |
+          cd packages/coding-agent/dist
+          sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256 2>/dev/null || shasum -a 256 ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: |
+            packages/coding-agent/dist/${{ matrix.asset_name }}
+            packages/coding-agent/dist/${{ matrix.asset_name }}.sha256
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          generate_release_notes: true
+
+      - name: Setup Node for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish to npm with provenance
+        shell: bash
+        run: |
+          cd packages/coding-agent
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json'));
+            pkg.name = '@apexaccs/cli';
+            pkg.version = process.env.GITHUB_REF_NAME.replace(/^v/, '');
+            pkg.repository = { type: 'git', url: 'git+https://github.com/Apex-Accelerator/apexcli.git' };
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+          npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
