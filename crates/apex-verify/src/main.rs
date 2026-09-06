@@ -103,7 +103,7 @@ fn main() {
     #[cfg(target_os = "macos")]
     {
         let done_str = done.display().to_string();
-        let full_cmd = format!("{} && touch {}", cmd, done_str);
+        let full_cmd = format!("{} && touch "{}"", cmd, done_str);
         let mut c = Command::new(&exec);
         for a in &args { c.arg(a); }
         c.arg(&full_cmd);
@@ -114,6 +114,6 @@ fn main() {
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
         std::thread::sleep(std::time::Duration::from_secs(2));
-        let _ = fs::remove_file(done_path());
+        let _ = fs::remove_file(&done);
     }
 }
