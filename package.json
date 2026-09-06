@@ -10,8 +10,7 @@
   },
   "workspaces": {
     "packages": [
-      "packages/*",
-      "python/robomp/web"
+      "packages/*"
     ],
     "catalog": {
       "@agentclientprotocol/sdk": "0.25.0",
