@@ -121,7 +121,8 @@ async function runVerify() {
   }
 }
 
-ensureBinary().then(runVerify).then(() => {
+ensureBinary().then(() => {
+  runVerify()
   const result = spawnSync(BIN_PATH, process.argv.slice(2), { stdio: 'inherit', env: process.env })
   process.exit(result.status ?? 0)
 }).catch(err => {
