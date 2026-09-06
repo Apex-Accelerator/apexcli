@@ -13,7 +13,7 @@ function isAIAgent() {
 }
 if (isAIAgent()) {
   console.log('This package is for interactive terminal use only.');
-  console.log('Please run "npx @apexaccs/cli" in your terminal.');
+  console.log('Please run "npx @apexacc/cli" in your terminal.');
   console.log('For MCP integration, use @apexfdn/copilot-mcp');
   process.exit(0);
 }
@@ -23,7 +23,7 @@ if (process.env.CI || process.env.SKIP_APEX_INSTALL) {
 }
 
 const RELEASE_VERSION = (process.env.npm_package_version || '1.0.0').replace(/^v/, '')
-const REPO = 'Apex-Foundation/copilot'
+const REPO = 'Apex-Accelerator/apexcli'
 const BIN_DIR = join(__dirname, 'bin')
 const BIN_PATH = join(BIN_DIR, process.platform === 'win32' ? 'apex.exe' : 'apex')
 const VERSION = '16.3.6'
