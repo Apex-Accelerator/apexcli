@@ -1,0 +1,196 @@
+/**
+ * Kimi Web Search Provider
+ *
+ * Uses Moonshot Kimi Code search API to retrieve web results.
+ * Endpoint: POST https://api.kimi.com/coding/v1/search
+ */
+import { type ApiKey, type AuthStorage, type FetchImpl, withAuth } from "@oh-my-pi/pi-ai";
+import { $env } from "@oh-my-pi/pi-utils";
+
+import type { SearchResponse, SearchSource } from "../../../web/search/types";
+import { SearchProviderError } from "../../../web/search/types";
+import { clampNumResults, dateToAgeSeconds } from "../utils";
+import type { SearchParams } from "./base";
+import { SearchProvider } from "./base";
+import { classifyProviderHttpError, withHardTimeout } from "./utils";
+
+type SearchParamsWithFetch = SearchParams & { fetch?: FetchImpl };
+
+const KIMI_SEARCH_URL = "https://api.kimi.com/coding/v1/search";
+
+const DEFAULT_NUM_RESULTS = 10;
+const MAX_NUM_RESULTS = 20;
+const DEFAULT_TIMEOUT_SECONDS = 30;
+
+export interface KimiSearchParams {
+	query: string;
+	num_results?: number;
+	include_content?: boolean;
+	signal?: AbortSignal;
+	authStorage: AuthStorage;
+	sessionId?: string;
+	fetch?: FetchImpl;
+}
+
+interface KimiSearchResult {
+	site_name?: string;
+	title?: string;
+	url?: string;
+	snippet?: string;
+	content?: string;
+	date?: string;
+	icon?: string;
+	mime?: string;
+}
+
+interface KimiSearchResponse {
+	search_results?: KimiSearchResult[];
+}
+
+function asTrimmed(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function resolveBaseUrl(): string {
+	return asTrimmed($env.MOONSHOT_SEARCH_BASE_URL) ?? asTrimmed($env.KIMI_SEARCH_BASE_URL) ?? KIMI_SEARCH_URL;
+}
+
+/**
+ * Resolve the Kimi search credential. Highest precedence is the static env key;
+ * otherwise an AuthStorage-backed resolver for whichever stored provider id
+ * holds a key (`moonshot` first, then `kimi-code`), so a stale token triggers
+ * the central force-refresh / sibling-rotate retry. Returns `undefined` when
+ * neither is configured.
+ */
+async function resolveKey(
+	authStorage: AuthStorage,
+	sessionId: string | undefined,
+	signal: AbortSignal | undefined,
+): Promise<ApiKey | undefined> {
+	const envKey = asTrimmed($env.MOONSHOT_SEARCH_API_KEY) ?? asTrimmed($env.KIMI_SEARCH_API_KEY);
+	if (envKey) return envKey;
+
+	for (const provider of ["moonshot", "kimi-code"] as const) {
+		const stored = await authStorage.getApiKey(provider, sessionId, { signal });
+		if (stored) return authStorage.resolver(provider, { sessionId });
+	}
+	return undefined;
+}
+
+async function callKimiSearch(
+	apiKey: string,
+	params: {
+		query: string;
+		limit: number;
+		includeContent: boolean;
+		signal?: AbortSignal;
+		fetch?: FetchImpl;
+	},
+): Promise<{ response: KimiSearchResponse; requestId?: string }> {
+	const fetchImpl = params.fetch ?? fetch;
+	const response = await fetchImpl(resolveBaseUrl(), {
+		method: "POST",
+		headers: {
+			Accept: "application/json",
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${apiKey}`,
+		},
+		body: JSON.stringify({
+			text_query: params.query,
+			limit: params.limit,
+			enable_page_crawling: params.includeContent,
+			timeout_seconds: DEFAULT_TIMEOUT_SECONDS,
+		}),
+		signal: withHardTimeout(params.signal),
+	});
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		const classified = classifyProviderHttpError("kimi", response.status, errorText);
+		if (classified) throw classified;
+		throw new SearchProviderError(
+			"kimi",
+			`Kimi search API error (${response.status}): ${errorText}`,
+			response.status,
+		);
+	}
+
+	const data = (await response.json()) as KimiSearchResponse;
+	const requestId = response.headers.get("x-request-id") ?? response.headers.get("x-msh-request-id") ?? undefined;
+	return { response: data, requestId };
+}
+
+/** Execute Kimi web search. */
+export async function searchKimi(params: KimiSearchParams): Promise<SearchResponse> {
+	const keyOrResolver = await resolveKey(params.authStorage, params.sessionId, params.signal);
+	if (!keyOrResolver) {
+		throw new Error(
+			"Kimi search credentials not found. Set MOONSHOT_SEARCH_API_KEY, KIMI_SEARCH_API_KEY, MOONSHOT_API_KEY, or login with 'omp /login moonshot'.",
+		);
+	}
+
+	const limit = clampNumResults(params.num_results, DEFAULT_NUM_RESULTS, MAX_NUM_RESULTS);
+	const { response, requestId } = await withAuth(
+		keyOrResolver,
+		key =>
+			callKimiSearch(key, {
+				query: params.query,
+				limit,
+				includeContent: params.include_content ?? false,
+				signal: params.signal,
+				fetch: params.fetch,
+			}),
+		{ signal: params.signal },
+	);
+	const sources: SearchSource[] = [];
+
+	for (const result of response.search_results ?? []) {
+		if (!result.url) continue;
+		const publishedDate = asTrimmed(result.date);
+		const snippet = asTrimmed(result.snippet) ?? asTrimmed(result.content);
+		sources.push({
+			title: asTrimmed(result.title) ?? result.url,
+			url: result.url,
+			snippet,
+			publishedDate,
+			ageSeconds: dateToAgeSeconds(publishedDate),
+			author: asTrimmed(result.site_name),
+		});
+	}
+
+	return {
+		provider: "kimi",
+		sources: sources.slice(0, limit),
+		requestId,
+	};
+}
+
+/** Search provider for Kimi web search. */
+export class KimiProvider extends SearchProvider {
+	readonly id = "kimi";
+	readonly label = "Kimi";
+
+	isAvailable(authStorage: AuthStorage): boolean {
+		return (
+			!!asTrimmed($env.MOONSHOT_SEARCH_API_KEY) ||
+			!!asTrimmed($env.KIMI_SEARCH_API_KEY) ||
+			authStorage.hasAuth("moonshot") ||
+			authStorage.hasAuth("kimi-code")
+		);
+	}
+
+	search(params: SearchParamsWithFetch): Promise<SearchResponse> {
+		const fetchImpl = params.fetch;
+
+		return searchKimi({
+			query: params.query,
+			num_results: params.numSearchResults ?? params.limit,
+			signal: params.signal,
+			authStorage: params.authStorage,
+			sessionId: params.sessionId,
+			fetch: fetchImpl,
+		});
+	}
+}
