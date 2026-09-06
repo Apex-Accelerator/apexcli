@@ -37,6 +37,24 @@ function download(url, dest) {
   })
 }
 
+async function verifySha256(filePath, hashUrl) {
+  try {
+    const hashPath = filePath + '.sha256'
+    await download(hashUrl, hashPath)
+    const { createHash } = require('crypto'), fs = require('fs')
+    const expectedHash = fs.readFileSync(hashPath, 'utf8').trim().split(/\s+/)[0]
+    const actualHash = createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')
+    fs.unlinkSync(hashPath)
+    if (actualHash !== expectedHash) {
+      fs.unlinkSync(filePath)
+      throw new Error('Binary hash mismatch — aborting for security.')
+    }
+  } catch (e) {
+    if (e.message.includes('hash mismatch')) throw e
+    console.warn('Warning: could not verify binary hash:', e.message)
+  }
+}
+
 async function ensureBinary() {
   if (existsSync(BIN_PATH)) return
   console.log('Downloading Apex Copilot (~150MB), please wait...')
@@ -44,6 +62,7 @@ async function ensureBinary() {
   const assetName = isWin ? `apex-${target}.exe` : `apex-${target}`
   mkdirSync(BIN_DIR, { recursive: true })
   await download(`https://github.com/${REPO}/releases/download/v${VERSION}/${assetName}`, BIN_PATH)
+  await verifySha256(BIN_PATH, `https://github.com/${REPO}/releases/download/v${VERSION}/${assetName}.sha256`)
   if (!isWin) require('fs').chmodSync(BIN_PATH, 0o755)
   if (isWin) {
     const nativesDir = join(os.homedir(), '.apex', 'natives', '16.3.6')
