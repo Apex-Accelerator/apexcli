@@ -58,7 +58,7 @@ const PACKAGES: readonly BundledPackage[] = [
 	},
 	{
 		dir: "packages/coding-agent",
-		name: "@apexacc/cli",
+		name: "@oh-my-pi/pi-coding-agent",
 		identifier: "PiCodingAgent",
 		// pi-coding-agent root carries legacy helpers (`defineTool`,
 		// `createCodingTools`, …) the canonical entry never exposed; the shim
