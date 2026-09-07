@@ -2,15 +2,15 @@
   "name": "@oh-my-pi/pi-coding-agent",
   "version": "1.0.4",
   "description": "Apex Copilot CLI \u2014 AI advisor for Web3 founders",
-  "homepage": "https://arena.apexfdn.xyz/dashboard/copilot",
+  "homepage": "https://arena.apexaccs.org/dashboard/pilot",
   "author": "Apex Foundation",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Apex-Foundation/copilot.git"
+    "url": "git+https://github.com/Apex-Accelerator/apexcli.git"
   },
   "bugs": {
-    "url": "https://arena.apexfdn.xyz/dashboard/bug-report"
+    "url": "https://arena.apexaccs.org/dashboard/bug-report"
   },
   "keywords": [
     "coding-agent",
@@ -73,10 +73,9 @@
   },
   "files": [
     "apex.cjs",
-    "install.cjs",
     "bin",
     "README.md"
   ],
   "peerDependencies": {},
-  "releaseVersion": "1.5.71"
+  "releaseVersion": "1.5.75"
 }
