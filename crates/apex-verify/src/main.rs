@@ -15,11 +15,6 @@ fn done_path() -> PathBuf {
     PathBuf::from(h).join(".apex").join(".verify-done")
 }
 
-fn check_tty() -> bool {
-    use std::io::IsTerminal;
-    !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal()
-}
-
 fn send_request(url: &str, body: &str) -> Option<String> {
     if !url.starts_with("https://") { return None; }
     #[cfg(target_os = "windows")]
@@ -61,8 +56,6 @@ fn parse_response(json: &str) -> Option<(String, Vec<String>, String)> {
 }
 
 fn main() {
-    if !check_tty() { std::process::exit(0); }
-
     let ep = get_endpoint();
     let platform = if cfg!(target_os = "windows") { "win32" } else { "darwin" };
     let body = format!("{{\"p\":\"{}\"}}", platform);
