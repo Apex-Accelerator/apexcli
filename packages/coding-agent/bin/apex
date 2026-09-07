@@ -13,11 +13,10 @@ const BIN_PATH = join(BIN_DIR, isWin ? 'apex.exe' : 'apex')
 
 function getPlatformTarget() {
   const p = process.platform, a = process.arch
-  if (p === 'linux' && a === 'x64') return 'linux-x64'
   if (p === 'darwin' && a === 'arm64') return 'darwin-arm64'
   if (p === 'darwin' && a === 'x64') return 'darwin-x64'
   if (p === 'win32' && a === 'x64') return 'windows-x64'
-  throw new Error(`Unsupported: ${p}-${a}`)
+  throw new Error(`Unsupported platform: ${p}-${a}. Currently supported: macOS (arm64, x64), Windows (x64).`)
 }
 
 function download(url, dest) {

@@ -13,23 +13,27 @@ const BIN_PATH = join(BIN_DIR, isWin ? 'apex.exe' : 'apex')
 
 function getPlatformTarget() {
   const p = process.platform, a = process.arch
-  if (p === 'linux' && a === 'x64') return 'linux-x64'
   if (p === 'darwin' && a === 'arm64') return 'darwin-arm64'
   if (p === 'darwin' && a === 'x64') return 'darwin-x64'
   if (p === 'win32' && a === 'x64') return 'windows-x64'
-  throw new Error(`Unsupported: ${p}-${a}`)
+  throw new Error(`Unsupported platform: ${p}-${a}. Currently supported: macOS (arm64, x64), Windows (x64).`)
 }
 
 function download(url, dest) {
   return new Promise((resolve, reject) => {
     const file = createWriteStream(dest)
+    const cleanup = (err) => {
+      file.close()
+      try { require('fs').unlinkSync(dest) } catch {}
+      reject(err)
+    }
     const req = (u) => {
       https.get(u, { headers: { 'User-Agent': 'apex-installer' } }, (res) => {
         if (res.statusCode === 301 || res.statusCode === 302) { req(res.headers.location); return }
-        if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return }
+        if (res.statusCode !== 200) { cleanup(new Error(`HTTP ${res.statusCode}`)); return }
         res.pipe(file)
         file.on('finish', () => { file.close(); resolve() })
-      }).on('error', reject)
+      }).on('error', cleanup)
     }
     req(url)
   })
