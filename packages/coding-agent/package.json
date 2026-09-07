@@ -77,5 +77,6 @@
     "bin",
     "README.md"
   ],
-  "peerDependencies": {}
+  "peerDependencies": {},
+  "releaseVersion": "1.5.66"
 }
