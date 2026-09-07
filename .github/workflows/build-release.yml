@@ -19,6 +19,10 @@ jobs:
             target: darwin-arm64
             asset_name: apex-darwin-arm64
             variant: ""
+          - os: macos-13
+            target: darwin-x64
+            asset_name: apex-darwin-x64
+            variant: ""
           - os: windows-latest
             target: windows-x64
             asset_name: apex-windows-x64.exe
