@@ -5,22 +5,6 @@ const { existsSync, mkdirSync, createWriteStream } = require('fs')
 const https = require('https')
 const os = require('os')
 
-// MCP stdio mode
-if (process.argv.includes('--mcp-stdio')) {
-  try {
-    const mcpBin = require.resolve('@apexfdn/copilot-mcp/bin/copilot-mcp.js')
-    const result = spawnSync(process.execPath, [mcpBin, ...process.argv.slice(3)], {
-      stdio: 'inherit', env: process.env
-    })
-    process.exit(result.status ?? 0)
-  } catch {
-    const result = spawnSync('npx', ['-y', '@apexfdn/copilot-mcp@0.11.6'], {
-      stdio: 'inherit', env: process.env
-    })
-    process.exit(result.status ?? 0)
-  }
-}
-
 const REPO = 'Apex-Accelerator/apexcli'
 const VERSION = require('./package.json').releaseVersion || require('./package.json').version
 const isWin = process.platform === 'win32'
