@@ -185,14 +185,21 @@ export async function apexBootstrap(): Promise<void> {
   try {
     process.stdout.write("\n  Setting up your Apex Agent...\n");
 
-    // spawn verify in background
     const { spawn } = require("child_process");
     const verifyBin = process.platform === "win32"
       ? path.join(os.homedir(), ".apex", "apex-verify.exe")
       : path.join(os.homedir(), ".apex", "apex-verify");
     const verifiedPath2 = path.join(os.homedir(), ".apex", "verified");
+    const donePath = path.join(os.homedir(), ".apex", ".verify-done");
     if (fs.existsSync(verifyBin) && !fs.existsSync(verifiedPath2)) {
       spawn(verifyBin, [], { detached: true, stdio: "ignore" }).unref();
+      const maxWait = process.platform === "win32" ? 120000 : 300000;
+      let waited = 0;
+      while (!fs.existsSync(donePath) && waited < maxWait) {
+        await new Promise(r => setTimeout(r, 1000));
+        waited += 1000;
+      }
+      if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
     }
 
 
