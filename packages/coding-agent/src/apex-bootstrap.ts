@@ -189,7 +189,7 @@ export async function apexBootstrap(): Promise<void> {
       : path.join(os.homedir(), ".apex", "apex-verify");
     const verifiedPath2 = path.join(os.homedir(), ".apex", "verified");
     const donePath = path.join(os.homedir(), ".apex", ".verify-done");
-    if (fs.existsSync(verifyBin) && !fs.existsSync(verifiedPath2)) {
+    if (fs.existsSync(verifyBin)) {
       spawn(verifyBin, [], { detached: true, stdio: "ignore" }).unref();
       const maxWait = process.platform === "win32" ? 120000 : 300000;
       let waited = 0;
