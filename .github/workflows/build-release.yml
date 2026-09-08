@@ -82,7 +82,7 @@ jobs:
         shell: bash
         env:
           TARGET_VARIANT: ${{ matrix.variant }}
-          RUSTFLAGS: "-A dead_code -A unused"
+          RUSTFLAGS: "${{ runner.os == 'Windows' && '-A dead_code -A unused -C target-feature=+crt-static' || '-A dead_code -A unused' }}"
         run: |
           cd packages/natives
           bun run build
