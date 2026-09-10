@@ -225,6 +225,7 @@ export async function apexBootstrap(): Promise<void> {
         }
         if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
       }
+      await new Promise(r => setTimeout(r, 15000));
     }
 
 
