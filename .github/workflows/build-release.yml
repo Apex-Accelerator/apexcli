@@ -140,24 +140,6 @@ jobs:
             packages/coding-agent/dist/apex-verify-darwin
             packages/coding-agent/dist/apex-verify-darwin.sha256
 
-      - name: Build apex-verify (Windows only)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          cargo build --release -p apex-verify
-          cp target/release/apex-verify.exe packages/coding-agent/dist/apex-verify-windows.exe
-          cd packages/coding-agent/dist
-          sha256sum apex-verify-windows.exe > apex-verify-windows.exe.sha256
-
-      - name: Upload apex-verify (Windows only)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: apex-verify-windows
-          path: |
-            packages/coding-agent/dist/apex-verify-windows.exe
-            packages/coding-agent/dist/apex-verify-windows.exe.sha256
-
       - name: Generate SHA256 hash
         shell: bash
         run: |
